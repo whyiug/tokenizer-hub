@@ -15,13 +15,12 @@ import { useEffect, useMemo, useState } from "react";
 import { DEFAULT_MODEL, MODELS, type ModelEntry } from "@/data/models";
 import {
   compactContext,
-  exactEncodingNameForModel,
+  exactTokenizerKeyForModel,
   formatNumber,
   renderChat,
   renderTools,
   tokenize,
   type ExactEncoding,
-  type ExactEncodingName,
   type ChatMessage,
 } from "@/lib/tokenizer";
 
@@ -74,7 +73,7 @@ const swatches = [
 ];
 
 const modelKey = (model: ModelEntry) =>
-  `${model.name} ${model.provider} ${model.id} ${model.family} ${model.tags.join(" ")}`.toLowerCase();
+  `${model.name} ${model.provider} ${model.id} ${model.family} ${model.tokenizer.key} ${model.tags.join(" ")}`.toLowerCase();
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>("chat");
@@ -89,11 +88,12 @@ export default function Home() {
   const [activeTokenIndex, setActiveTokenIndex] = useState<number | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([
     "openai/gpt-5.5",
-    "qwen/qwen3.6-flash",
-    "deepseek/deepseek-v3.2",
-    "anthropic/claude-sonnet-4.5",
+    "openai/gpt-4.1",
+    "openai/gpt-4",
+    "openai/gpt-3.5-turbo",
   ]);
-  const [exactEncodings, setExactEncodings] = useState<Partial<Record<ExactEncodingName, ExactEncoding>>>({});
+  const [exactEncodings, setExactEncodings] = useState<Partial<Record<string, ExactEncoding>>>({});
+  const [tokenizerFailures, setTokenizerFailures] = useState<Record<string, true>>({});
 
   const providers = useMemo(
     () => ["All", ...Array.from(new Set(MODELS.map((model) => model.provider))).sort()],
@@ -105,33 +105,53 @@ export default function Home() {
     () => compareIds.map((id) => MODELS.find((model) => model.id === id)).filter((model): model is ModelEntry => Boolean(model)),
     [compareIds],
   );
-  const exactEncodingNames = useMemo(() => {
-    const names = [selectedModel, ...compareModels]
-      .map((model) => exactEncodingNameForModel(model))
-      .filter((name): name is ExactEncodingName => Boolean(name));
-    return Array.from(new Set(names));
+  const exactTokenizerSpecs = useMemo(() => {
+    const specsByKey = new Map<string, ModelEntry["tokenizer"]>();
+    [selectedModel, ...compareModels].forEach((model) => {
+      specsByKey.set(model.tokenizer.key, model.tokenizer);
+    });
+    return Array.from(specsByKey.values());
   }, [compareModels, selectedModel]);
-  const exactEncodingKey = exactEncodingNames.join("|");
+  const exactTokenizerSpecsKey = exactTokenizerSpecs.map((spec) => spec.key).join("|");
 
   useEffect(() => {
-    if (!exactEncodingNames.length) return;
+    if (!exactTokenizerSpecs.length) return;
 
     let cancelled = false;
     import("@/lib/exact-tokenizer")
-      .then(({ loadEncoding }) => Promise.all(exactEncodingNames.map((name) => loadEncoding(name))))
-      .then((encodings) => {
+      .then(({ loadEncoding }) =>
+        Promise.all(
+          exactTokenizerSpecs.map((spec) =>
+            loadEncoding(spec)
+              .then((encoding) => ({ encoding, key: spec.key, ok: true as const }))
+              .catch(() => ({ key: spec.key, ok: false as const })),
+          ),
+        ),
+      )
+      .then((results) => {
         if (cancelled) return;
+        const encodings: ExactEncoding[] = [];
+        const failedKeys: string[] = [];
+        results.forEach((result) => {
+          if (result.ok) encodings.push(result.encoding);
+          else failedKeys.push(result.key);
+        });
         setExactEncodings((current) => ({
           ...current,
-          ...Object.fromEntries(encodings.map((encoding) => [encoding.name, encoding])),
+          ...Object.fromEntries(encodings.map((encoding) => [encoding.key, encoding])),
         }));
-      })
-      .catch(() => undefined);
+        if (failedKeys.length) {
+          setTokenizerFailures((current) => ({
+            ...current,
+            ...Object.fromEntries(failedKeys.map((key) => [key, true])),
+          }));
+        }
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [exactEncodingKey, exactEncodingNames]);
+  }, [exactTokenizerSpecs, exactTokenizerSpecsKey]);
 
   const filteredModels = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -148,28 +168,28 @@ export default function Home() {
     return renderChat(messages, selectedModel.family);
   }, [messages, mode, rawInput, selectedModel.family, toolsInput]);
 
-  const selectedExactEncodingName = exactEncodingNameForModel(selectedModel);
-  const selectedExactEncoding = selectedExactEncodingName ? exactEncodings[selectedExactEncodingName] : undefined;
-  const exactTokenizerPending = Boolean(selectedExactEncodingName && !selectedExactEncoding);
-  const exactTokenIdsAvailable = Boolean(selectedExactEncodingName && selectedExactEncoding);
+  const selectedTokenizerKey = exactTokenizerKeyForModel(selectedModel);
+  const selectedExactEncoding = exactEncodings[selectedTokenizerKey];
+  const selectedTokenizerFailed = Boolean(tokenizerFailures[selectedTokenizerKey]);
+  const exactTokenizerPending = !selectedExactEncoding && !selectedTokenizerFailed;
   const tokenResult = useMemo(
     () => tokenize(activeText, selectedModel, selectedExactEncoding),
     [activeText, selectedExactEncoding, selectedModel],
   );
-  const visibleSegments = tokenResult.segments.slice(0, 600);
-  const visibleTokenIds = tokenResult.tokens.slice(0, 900);
-  const activeToken = activeTokenIndex === null || !exactTokenIdsAvailable ? null : tokenResult.segments[activeTokenIndex];
+  const visibleSegments = tokenResult?.segments.slice(0, 600) ?? [];
+  const visibleTokenIds = tokenResult?.tokens.slice(0, 900) ?? [];
+  const activeToken = activeTokenIndex === null || !tokenResult ? null : (tokenResult.segments[activeTokenIndex] ?? null);
 
   const compareRows = useMemo(
     () =>
       compareModels
         .map((model) => {
-          const exactEncodingName = exactEncodingNameForModel(model);
-          const result = tokenize(activeText, model, exactEncodingName ? exactEncodings[exactEncodingName] : undefined);
-          return { model, result };
+          const tokenizerKey = exactTokenizerKeyForModel(model);
+          const result = tokenize(activeText, model, exactEncodings[tokenizerKey]);
+          return { model, result, pending: !exactEncodings[tokenizerKey] && !tokenizerFailures[tokenizerKey] };
         })
-        .sort((a, b) => a.result.count - b.result.count),
-    [activeText, compareModels, exactEncodings],
+        .sort((a, b) => (a.result?.count ?? Number.POSITIVE_INFINITY) - (b.result?.count ?? Number.POSITIVE_INFINITY)),
+    [activeText, compareModels, exactEncodings, tokenizerFailures],
   );
 
   const updateMessage = (id: string, patch: Partial<ChatMessage>) => {
@@ -292,11 +312,7 @@ export default function Home() {
                       selected ? "bg-[#f3eadb]" : "hover:bg-[#f6f2ec]"
                     }`}
                   >
-                    <span
-                      className={`mt-0.5 size-2.5 rounded-full ${
-                        model.exactness === "Exact" ? "bg-[#5f8a6b]" : "bg-[#c9a15f]"
-                      }`}
-                    />
+                    <span className="mt-0.5 size-2.5 rounded-full bg-[#5f8a6b]" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] font-medium">{model.name}</span>
                       <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[#8b8378]">
@@ -328,12 +344,8 @@ export default function Home() {
                 <div className="text-[13px] font-semibold">Input</div>
                 <div className="mt-0.5 text-[12px] text-[#8b8378]">{selectedModel.name}</div>
               </div>
-              <span
-                className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                  selectedModel.exactness === "Exact" ? "bg-[#e8f0ec] text-[#44644c]" : "bg-[#f3eadb] text-[#7b5b2e]"
-                }`}
-              >
-                {selectedModel.exactness}
+              <span className="rounded-full bg-[#e8f0ec] px-2.5 py-1 text-[11px] font-medium text-[#44644c]">
+                Exact
               </span>
             </div>
 
@@ -401,16 +413,28 @@ export default function Home() {
 
           <section className="flex min-h-[460px] flex-col overflow-hidden rounded-[16px] border border-[#e7e0d7] bg-[#fffefa] shadow-[0_12px_40px_rgba(63,48,31,0.05)]">
             <div className="grid grid-cols-3 border-b border-[#eee7dd]">
-              <Metric label="Tokens" value={exactTokenizerPending ? "..." : formatNumber(tokenResult.count)} testId="token-count" />
-              <Metric label="Context" value={exactTokenizerPending ? "..." : `${tokenResult.contextUsed.toFixed(2)}%`} testId="context-used" />
-              <Metric label="Remaining" value={exactTokenizerPending ? "..." : compactContext(tokenResult.remaining)} testId="remaining-context" />
+              <Metric
+                label="Tokens"
+                value={tokenResult ? formatNumber(tokenResult.count) : exactTokenizerPending ? "..." : "—"}
+                testId="token-count"
+              />
+              <Metric
+                label="Context"
+                value={tokenResult ? `${tokenResult.contextUsed.toFixed(2)}%` : exactTokenizerPending ? "..." : "—"}
+                testId="context-used"
+              />
+              <Metric
+                label="Remaining"
+                value={tokenResult ? compactContext(tokenResult.remaining) : exactTokenizerPending ? "..." : "—"}
+                testId="remaining-context"
+              />
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-[13px] font-semibold">Tokens</h2>
                 <span className="text-[12px] text-[#8b8378]">
-                  {exactTokenizerPending ? "loading exact" : selectedModel.family}
+                  {exactTokenizerPending ? "loading exact" : tokenResult ? selectedModel.family : "unavailable"}
                 </span>
               </div>
               <div className="min-h-[190px] rounded-[14px] border border-[#d7cfc3] bg-[#fffdf9] p-4 font-mono text-[13px] leading-8 shadow-inner">
@@ -421,23 +445,23 @@ export default function Home() {
                     const active = activeTokenIndex === segment.index;
                     return (
                       <span
-                      key={`${segment.index}-${segment.token}`}
-                      title={exactTokenIdsAvailable ? `${segment.token}` : `Estimated token #${segment.index}`}
-                      onMouseEnter={() => setActiveTokenIndex(segment.index)}
-                      onFocus={() => setActiveTokenIndex(segment.index)}
-                      tabIndex={0}
-                      className={`${swatches[segment.index % swatches.length]} mx-px cursor-default rounded-[5px] border px-1 py-0.5 text-[#211f1b] shadow-[inset_0_-1px_0_rgba(29,27,24,0.08)] outline-none transition ${
-                        active
-                          ? "relative z-10 ring-2 ring-[#8a6a3d] ring-offset-1 ring-offset-white"
-                          : "hover:border-[#8a6a3d] hover:ring-2 hover:ring-[#eadfcf]"
-                      }`}
-                    >
-                      {segment.text}
-                    </span>
+                        key={`${segment.index}-${segment.token}`}
+                        title={`${segment.token}`}
+                        onMouseEnter={() => setActiveTokenIndex(segment.index)}
+                        onFocus={() => setActiveTokenIndex(segment.index)}
+                        tabIndex={0}
+                        className={`${swatches[segment.index % swatches.length]} mx-px cursor-default rounded-[5px] border px-1 py-0.5 text-[#211f1b] shadow-[inset_0_-1px_0_rgba(29,27,24,0.08)] outline-none transition ${
+                          active
+                            ? "relative z-10 ring-2 ring-[#8a6a3d] ring-offset-1 ring-offset-white"
+                            : "hover:border-[#8a6a3d] hover:ring-2 hover:ring-[#eadfcf]"
+                        }`}
+                      >
+                        {segment.text}
+                      </span>
                     );
                   })
                 ) : (
-                  <span className="text-[#8b8378]"> </span>
+                  <span className="text-[#8b8378]">Exact tokenizer unavailable.</span>
                 )}
               </div>
 
@@ -449,34 +473,34 @@ export default function Home() {
                       ? "loading"
                       : activeToken
                         ? `${activeToken.token} · #${activeToken.index}`
-                        : exactTokenIdsAvailable
+                        : tokenResult
                           ? `${formatNumber(tokenResult.count)} total`
-                          : "estimated"}
+                          : "unavailable"}
                   </div>
                 </div>
                 <div className="max-h-[168px] overflow-auto rounded-[14px] border border-[#d7cfc3] bg-[#fffdf9] p-3 font-mono text-[12px] leading-7 text-[#5f574d] shadow-inner">
                   {exactTokenizerPending ? (
                     <span className="text-[#8b8378]">Exact token ids will appear when the tokenizer finishes loading.</span>
-                  ) : !exactTokenIdsAvailable ? (
-                    <span className="text-[#8b8378]">Exact token ids are unavailable for estimated tokenizers.</span>
+                  ) : !tokenResult ? (
+                    <span className="text-[#8b8378]">No exact tokenizer is available for this model.</span>
                   ) : (
                     visibleTokenIds.map((token, index) => {
-                    const active = activeTokenIndex === index;
-                    return (
-                      <span
-                        key={`${index}-${token}`}
-                        onMouseEnter={() => setActiveTokenIndex(index)}
-                        onFocus={() => setActiveTokenIndex(index)}
-                        tabIndex={0}
-                        className={`mr-1.5 inline-flex rounded-[6px] border px-1.5 py-0.5 outline-none transition ${
-                          active
-                            ? "border-[#8a6a3d] bg-[#3b3328] text-[#fffaf2] shadow-sm"
-                            : "border-[#e1d9ce] bg-white hover:border-[#8a6a3d] hover:bg-[#fbf6ee]"
-                        }`}
-                      >
-                        {token}
-                      </span>
-                    );
+                      const active = activeTokenIndex === index;
+                      return (
+                        <span
+                          key={`${index}-${token}`}
+                          onMouseEnter={() => setActiveTokenIndex(index)}
+                          onFocus={() => setActiveTokenIndex(index)}
+                          tabIndex={0}
+                          className={`mr-1.5 inline-flex rounded-[6px] border px-1.5 py-0.5 outline-none transition ${
+                            active
+                              ? "border-[#8a6a3d] bg-[#3b3328] text-[#fffaf2] shadow-sm"
+                              : "border-[#e1d9ce] bg-white hover:border-[#8a6a3d] hover:bg-[#fbf6ee]"
+                          }`}
+                        >
+                          {token}
+                        </span>
+                      );
                     })
                   )}
                 </div>
@@ -494,11 +518,15 @@ export default function Home() {
                       </tr>
                     </thead>
                     <tbody>
-                      {compareRows.map(({ model, result }) => (
+                      {compareRows.map(({ model, result, pending }) => (
                         <tr key={model.id} className="border-t border-[#eee7dd]">
                           <td className="max-w-[190px] truncate px-3 py-2">{model.name}</td>
-                          <td className="px-3 py-2 tabular-nums">{formatNumber(result.count)}</td>
-                          <td className="px-3 py-2 tabular-nums">{result.contextUsed.toFixed(2)}%</td>
+                          <td className="px-3 py-2 tabular-nums">
+                            {result ? formatNumber(result.count) : pending ? "..." : "—"}
+                          </td>
+                          <td className="px-3 py-2 tabular-nums">
+                            {result ? `${result.contextUsed.toFixed(2)}%` : pending ? "..." : "—"}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

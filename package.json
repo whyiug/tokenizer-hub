@@ -8,9 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "validate:models": "node scripts/validate-model-catalog.mjs",
-    "validate:exact-ui": "node scripts/validate-exact-tokenizer-ui.mjs"
+    "validate:tokenizer-reuse": "node scripts/validate-tokenizer-reuse.mjs",
+    "validate:exact-ui": "node scripts/validate-exact-tokenizer-ui.mjs",
+    "validate:all-models-ui": "node scripts/validate-all-models-ui.mjs",
+    "download:tokenizers": "node scripts/download-tokenizer-assets.mjs"
   },
   "dependencies": {
+    "@huggingface/tokenizers": "^0.1.3",
     "clsx": "^2.1.1",
     "js-tiktoken": "^1.0.21",
     "lucide-react": "^1.14.0",

@@ -10,11 +10,11 @@ The first version is a Vercel-deployable Next.js application with a static model
 - Snapshot file: `src/data/models.ts`.
 - Snapshot date: `2026-05-10`.
 - Runtime cap: fewer than 300 default models.
-- Default UI fields: model name, provider, context, exactness. Source and snapshot details stay out of the user interface.
+- Default UI fields: model name, provider, context, and exact tokenizer status. Source and snapshot details stay out of the user interface.
 
 ## Artifact strategy
 
-Only tokenizer artifacts are needed for future server-side expansion:
+Only tokenizer artifacts are needed. Model weights are out of scope.
 
 - `tokenizer.json`
 - `tokenizer_config.json`
@@ -24,22 +24,23 @@ Only tokenizer artifacts are needed for future server-side expansion:
 - `tokenizer.model`
 - `chat_template.jinja`
 
-Model weights are out of scope.
+Tokenizer assets are keyed by a shared `tokenizerKey`. If a model family uses the same tokenizer files, the app keeps one copy and maps all compatible models to that key. The current local assets live under `public/tokenizers/<tokenizerKey>/`.
 
 ## Runtime strategy
 
 The Vercel-first version runs tokenization in the browser:
 
 - OpenAI-compatible `o200k`, `cl100k`, and `gpt2` families use `js-tiktoken`.
-- Other families use a deterministic estimator with explicit `Estimated` status.
+- Open models with Hugging Face `tokenizer.json` support use `@huggingface/tokenizers` against local tokenizer assets.
+- There is no estimator. If an exact tokenizer is unavailable or fails to load, the UI does not display token output.
 - Chat and tools modes render a compact prompt template before tokenization.
 
 Future exact paths can add provider-specific adapters:
 
 - Anthropic: Messages count tokens API.
 - Gemini: `models.countTokens`.
-- Kimi: token estimate endpoint.
-- DeepSeek/Qwen/open models: tokenizer artifacts and chat templates.
+- Kimi/open models with custom tokenizer code: local adapter only after the tokenizer can be reproduced exactly in JavaScript.
+- Additional open models: tokenizer artifacts and chat templates, deduplicated by tokenizer key.
 
 ## Deployment
 
