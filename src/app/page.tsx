@@ -149,13 +149,16 @@ export default function Home() {
   }, [messages, mode, rawInput, selectedModel.family, toolsInput]);
 
   const selectedExactEncodingName = exactEncodingNameForModel(selectedModel);
+  const selectedExactEncoding = selectedExactEncodingName ? exactEncodings[selectedExactEncodingName] : undefined;
+  const exactTokenizerPending = Boolean(selectedExactEncodingName && !selectedExactEncoding);
+  const exactTokenIdsAvailable = Boolean(selectedExactEncodingName && selectedExactEncoding);
   const tokenResult = useMemo(
-    () => tokenize(activeText, selectedModel, selectedExactEncodingName ? exactEncodings[selectedExactEncodingName] : undefined),
-    [activeText, exactEncodings, selectedExactEncodingName, selectedModel],
+    () => tokenize(activeText, selectedModel, selectedExactEncoding),
+    [activeText, selectedExactEncoding, selectedModel],
   );
   const visibleSegments = tokenResult.segments.slice(0, 600);
   const visibleTokenIds = tokenResult.tokens.slice(0, 900);
-  const activeToken = activeTokenIndex === null ? null : tokenResult.segments[activeTokenIndex];
+  const activeToken = activeTokenIndex === null || !exactTokenIdsAvailable ? null : tokenResult.segments[activeTokenIndex];
 
   const compareRows = useMemo(
     () =>
@@ -398,24 +401,28 @@ export default function Home() {
 
           <section className="flex min-h-[460px] flex-col overflow-hidden rounded-[16px] border border-[#e7e0d7] bg-[#fffefa] shadow-[0_12px_40px_rgba(63,48,31,0.05)]">
             <div className="grid grid-cols-3 border-b border-[#eee7dd]">
-              <Metric label="Tokens" value={formatNumber(tokenResult.count)} testId="token-count" />
-              <Metric label="Context" value={`${tokenResult.contextUsed.toFixed(2)}%`} testId="context-used" />
-              <Metric label="Remaining" value={compactContext(tokenResult.remaining)} testId="remaining-context" />
+              <Metric label="Tokens" value={exactTokenizerPending ? "..." : formatNumber(tokenResult.count)} testId="token-count" />
+              <Metric label="Context" value={exactTokenizerPending ? "..." : `${tokenResult.contextUsed.toFixed(2)}%`} testId="context-used" />
+              <Metric label="Remaining" value={exactTokenizerPending ? "..." : compactContext(tokenResult.remaining)} testId="remaining-context" />
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-[13px] font-semibold">Tokens</h2>
-                <span className="text-[12px] text-[#8b8378]">{selectedModel.family}</span>
+                <span className="text-[12px] text-[#8b8378]">
+                  {exactTokenizerPending ? "loading exact" : selectedModel.family}
+                </span>
               </div>
               <div className="min-h-[190px] rounded-[14px] border border-[#d7cfc3] bg-[#fffdf9] p-4 font-mono text-[13px] leading-8 shadow-inner">
-                {visibleSegments.length ? (
+                {exactTokenizerPending ? (
+                  <span className="text-[#8b8378]">Loading exact tokenizer...</span>
+                ) : visibleSegments.length ? (
                   visibleSegments.map((segment) => {
                     const active = activeTokenIndex === segment.index;
                     return (
-                    <span
+                      <span
                       key={`${segment.index}-${segment.token}`}
-                      title={`${segment.token}`}
+                      title={exactTokenIdsAvailable ? `${segment.token}` : `Estimated token #${segment.index}`}
                       onMouseEnter={() => setActiveTokenIndex(segment.index)}
                       onFocus={() => setActiveTokenIndex(segment.index)}
                       tabIndex={0}
@@ -438,11 +445,22 @@ export default function Home() {
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="text-[13px] font-semibold">Token ids</div>
                   <div className="min-w-0 truncate rounded-full border border-[#e1d9ce] bg-white px-2.5 py-1 font-mono text-[11px] text-[#5f574d]">
-                    {activeToken ? `${activeToken.token} · #${activeToken.index}` : `${formatNumber(tokenResult.count)} total`}
+                    {exactTokenizerPending
+                      ? "loading"
+                      : activeToken
+                        ? `${activeToken.token} · #${activeToken.index}`
+                        : exactTokenIdsAvailable
+                          ? `${formatNumber(tokenResult.count)} total`
+                          : "estimated"}
                   </div>
                 </div>
                 <div className="max-h-[168px] overflow-auto rounded-[14px] border border-[#d7cfc3] bg-[#fffdf9] p-3 font-mono text-[12px] leading-7 text-[#5f574d] shadow-inner">
-                  {visibleTokenIds.map((token, index) => {
+                  {exactTokenizerPending ? (
+                    <span className="text-[#8b8378]">Exact token ids will appear when the tokenizer finishes loading.</span>
+                  ) : !exactTokenIdsAvailable ? (
+                    <span className="text-[#8b8378]">Exact token ids are unavailable for estimated tokenizers.</span>
+                  ) : (
+                    visibleTokenIds.map((token, index) => {
                     const active = activeTokenIndex === index;
                     return (
                       <span
@@ -459,7 +477,8 @@ export default function Home() {
                         {token}
                       </span>
                     );
-                  })}
+                    })
+                  )}
                 </div>
               </div>
 
