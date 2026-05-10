@@ -45,6 +45,7 @@ class BatchTokenizeRequest(BaseModel):
     text: str
 
 
+@app.get("/api/healthz")
 @app.get("/healthz")
 def healthz() -> dict[str, Any]:
     return {
@@ -55,6 +56,7 @@ def healthz() -> dict[str, Any]:
     }
 
 
+@app.post("/api/v1/tokenize")
 @app.post("/v1/tokenize")
 def tokenize(request: TokenizeRequest) -> dict[str, Any]:
     try:
@@ -67,6 +69,7 @@ def tokenize(request: TokenizeRequest) -> dict[str, Any]:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
+@app.post("/api/v1/tokenize/batch")
 @app.post("/v1/tokenize/batch")
 def tokenize_batch(request: BatchTokenizeRequest) -> dict[str, Any]:
     if not registry.ready:

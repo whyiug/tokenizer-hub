@@ -1,10 +1,13 @@
 import fs from "node:fs";
 
 const requiredFiles = [
+  "api/index.py",
   "backend/app/main.py",
   "backend/app/tokenizer_registry.py",
   "backend/catalog.json",
   "backend/requirements.txt",
+  "requirements.txt",
+  "vercel.json",
 ];
 
 for (const file of requiredFiles) {

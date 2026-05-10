@@ -78,36 +78,16 @@ class HfBackendTokenizer:
         if not tokenizer_file.exists():
             raise TokenizerError(f"Missing tokenizer file for {spec.key}: {tokenizer_file}")
 
+        from tokenizers import Tokenizer
+
         self.key = spec.key
         self.label = spec.label
-        self._backend_name = "transformers"
-
-        try:
-            from transformers import AutoTokenizer
-
-            self._tokenizer = AutoTokenizer.from_pretrained(
-                str(asset_dir),
-                local_files_only=True,
-                trust_remote_code=False,
-                use_fast=True,
-            )
-            if not getattr(self._tokenizer, "is_fast", False):
-                raise TokenizerError(f"Transformers loaded a slow tokenizer for {spec.key}")
-        except Exception:
-            from tokenizers import Tokenizer
-
-            self._backend_name = "tokenizers"
-            self._tokenizer = Tokenizer.from_file(str(tokenizer_file))
+        self._tokenizer = Tokenizer.from_file(str(tokenizer_file))
 
     def tokenize(self, text: str) -> dict[str, Any]:
-        if self._backend_name == "transformers":
-            ids = self._tokenizer.encode(text, add_special_tokens=False)
-            pieces = self._tokenizer.convert_ids_to_tokens(ids)
-            segments = self._segments_from_ids(ids, pieces)
-        else:
-            encoded = self._tokenizer.encode(text, add_special_tokens=False)
-            ids = encoded.ids
-            segments = self._segments_from_ids(ids, encoded.tokens)
+        encoded = self._tokenizer.encode(text, add_special_tokens=False)
+        ids = encoded.ids
+        segments = self._segments_from_ids(ids, encoded.tokens)
 
         return {
             "tokenizerKey": self.key,
@@ -158,7 +138,7 @@ class TokenizerRegistry:
     ) -> None:
         repo_root = Path(__file__).resolve().parents[2]
         self.catalog_path = catalog_path or repo_root / "backend" / "catalog.json"
-        self.tokenizer_root = tokenizer_root or repo_root / "public" / "tokenizers"
+        self.tokenizer_root = tokenizer_root or repo_root / "backend" / "tokenizers"
         self.ready = False
         self.errors: dict[str, str] = {}
         self._specs: dict[str, TokenizerSpec] = {}

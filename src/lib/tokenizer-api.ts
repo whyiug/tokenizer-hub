@@ -24,7 +24,8 @@ export type BackendBatchResult = {
   results: Array<BackendTokenizeResult | BackendUnavailableResult>;
 };
 
-export const DEFAULT_TOKENIZER_API_BASE = "http://127.0.0.1:8000";
+export const DEFAULT_TOKENIZER_API_BASE =
+  process.env.NODE_ENV === "production" ? "/api" : "http://127.0.0.1:8000";
 
 const postJson = async <T>(path: string, body: unknown, signal?: AbortSignal, apiBase = DEFAULT_TOKENIZER_API_BASE): Promise<T> => {
   const normalizedBase = apiBase.replace(/\/$/, "");

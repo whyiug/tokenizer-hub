@@ -27,7 +27,7 @@ Only tokenizer artifacts are needed. Model weights are out of scope.
 - `tokenizer.model`
 - `chat_template.jinja`
 
-Tokenizer assets are keyed by a shared `tokenizerKey`. A tokenizer can be reused only when the remote `tokenizer.json` size is exactly identical for every mapped repository. The local assets live under `public/tokenizers/<tokenizerKey>/`.
+Tokenizer assets are keyed by a shared `tokenizerKey`. A tokenizer can be reused only when the remote `tokenizer.json` size is exactly identical for every mapped repository. The local assets live under `backend/tokenizers/<tokenizerKey>/` so they are bundled with the backend and not served as public static files.
 
 Downloads use the Hugging Face mirror when needed:
 
@@ -41,7 +41,9 @@ The download and validation scripts clear proxy environment variables for Huggin
 
 The browser does not load tokenizer vocabulary files. It only sends text and model ids to the backend.
 
-- Frontend API base: `NEXT_PUBLIC_TOKENIZER_API_BASE`, defaulting to `http://127.0.0.1:8000`.
+- Frontend API base: `NEXT_PUBLIC_TOKENIZER_API_BASE`.
+- Local default API base: `http://127.0.0.1:8000`.
+- Production default API base: same-origin `/api`.
 - Backend service: FastAPI under `backend/app`.
 - Health endpoint: `GET /healthz`.
 - Tokenization endpoint: `POST /v1/tokenize`.
@@ -49,7 +51,7 @@ The browser does not load tokenizer vocabulary files. It only sends text and mod
 
 The backend preloads every tokenizer in `backend/catalog.json` during service startup. If any tokenizer cannot be loaded exactly, the service reports it in `/healthz` and the UI shows no token output for that model instead of estimating.
 
-OpenAI-compatible tokenizer families use Python `tiktoken`. Open models use their local Hugging Face tokenizer artifacts through `transformers` or the lower-level `tokenizers` runtime. Both paths return exact token ids and text segments.
+OpenAI-compatible tokenizer families use Python `tiktoken`. Open models use their local Hugging Face `tokenizer.json` artifacts through the native Rust `tokenizers` runtime. Both paths return exact token ids and text segments.
 
 ## Validation
 
@@ -68,6 +70,6 @@ pnpm validate:all-models-ui http://localhost:3001
 
 ## Deployment
 
-The frontend can still be deployed to Vercel, but it must point at a separately hosted backend service through `NEXT_PUBLIC_TOKENIZER_API_BASE`.
+The Vercel deployment exposes the FastAPI backend as a Python Function through `api/index.py` and rewrites `/api/:path*` to that function. This keeps the browser on the same origin and avoids exposing tokenizer assets to the client.
 
-The backend should run as a long-lived Python service with the tokenizer asset directory available at runtime. It should be warmed during startup and kept alive behind a stable HTTPS URL before binding the production frontend domain.
+For a heavier production tier, the same FastAPI app can still move to a long-lived Python service. In that case set `NEXT_PUBLIC_TOKENIZER_API_BASE` to the external backend URL before promoting the frontend.

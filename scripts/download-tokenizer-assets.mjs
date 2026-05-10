@@ -58,7 +58,7 @@ const curl = (url, targetPath) =>
   });
 
 const download = async (asset, filename) => {
-  const targetDir = path.join("public", "tokenizers", asset.key);
+  const targetDir = path.join("backend", "tokenizers", asset.key);
   const targetPath = path.join(targetDir, filename);
   const tmpPath = `${targetPath}.tmp`;
   await fs.mkdir(targetDir, { recursive: true });
