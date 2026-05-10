@@ -346,6 +346,7 @@ export default function Home() {
             <div className="min-h-0 flex-1 overflow-auto p-4">
               {mode === "raw" ? (
                 <textarea
+                  data-testid="raw-input"
                   value={rawInput}
                   onChange={(event) => setRawInput(event.target.value)}
                   className="min-h-[520px] w-full resize-none rounded-[14px] border border-[#e1d9ce] bg-[#fcfbf7] p-4 font-mono text-[13px] leading-6 outline-none transition focus:border-[#c9aa78] focus:ring-4 focus:ring-[#eadfcf]/60"

@@ -17,8 +17,12 @@ page.setDefaultTimeout(90_000);
 
 try {
   await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  await page.waitForFunction(() => {
+    const tokenCount = document.querySelector('[data-testid="token-count"]')?.textContent?.trim();
+    return tokenCount && tokenCount !== "..." && tokenCount !== "—";
+  });
   await page.getByRole("button", { name: /Raw/ }).click();
-  await page.locator("textarea").first().fill(sample);
+  await page.getByTestId("raw-input").fill(sample);
   const search = page.getByPlaceholder("Model");
 
   for (const model of models) {
@@ -37,7 +41,7 @@ try {
     if (!Number.isFinite(tokenCount) || tokenCount <= 0) {
       throw new Error(`${model.id} did not produce a positive token count. Got: ${tokenCountText}`);
     }
-    if (/90000\\s*90001|90000,\\s*90001|90000/.test(bodyText)) {
+    if (/90000\s*90001|90000,\s*90001|90000/.test(bodyText)) {
       throw new Error(`${model.id} displayed fake 90000-series token ids.`);
     }
     if (/unavailable|estimated/i.test(bodyText)) {

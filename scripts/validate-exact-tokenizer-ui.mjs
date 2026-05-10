@@ -9,16 +9,22 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
 
 try {
   await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 20_000 });
+  await page.waitForFunction(() => {
+    const tokenCount = document.querySelector('[data-testid="token-count"]')?.textContent?.trim();
+    return tokenCount && tokenCount !== "..." && tokenCount !== "—";
+  });
   await page.getByRole("button", { name: /Raw/ }).click();
-  await page.locator("textarea").first().fill(sample);
-  await page.waitForFunction(
-    (ids) => ids.every((id) => document.body.innerText.includes(id)),
-    expectedIds,
-    { timeout: 30_000 },
-  );
+  await page.getByTestId("raw-input").fill(sample);
 
-  const bodyText = await page.locator("body").innerText();
-  const hasEstimatedIds = /90000\\s*90001|90000,\\s*90001|90000/.test(bodyText);
+  let bodyText = "";
+  const deadline = Date.now() + 45_000;
+  while (Date.now() < deadline) {
+    bodyText = await page.locator("body").innerText();
+    if (expectedIds.every((id) => bodyText.includes(id))) break;
+    await page.waitForTimeout(250);
+  }
+
+  const hasEstimatedIds = /90000\s*90001|90000,\s*90001|90000/.test(bodyText);
   const hasExpectedIds = expectedIds.every((id) => bodyText.includes(id));
 
   if (hasEstimatedIds || !hasExpectedIds) {
