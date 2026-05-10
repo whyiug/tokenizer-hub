@@ -64,14 +64,14 @@ const modeMeta: Record<Mode, { label: string; icon: React.ElementType }> = {
 };
 
 const swatches = [
-  "bg-[#e8f0ec]",
-  "bg-[#f3eadb]",
-  "bg-[#e9edf7]",
-  "bg-[#f0e6e3]",
-  "bg-[#ece8f1]",
-  "bg-[#edf0df]",
-  "bg-[#e6eeee]",
-  "bg-[#f3e8d4]",
+  "bg-[#ffd76f] border-[#d19900]",
+  "bg-[#9ee8b4] border-[#4aa367]",
+  "bg-[#9fd8ff] border-[#4f92c6]",
+  "bg-[#ffaea8] border-[#cf675f]",
+  "bg-[#ccb7ff] border-[#8064c6]",
+  "bg-[#92e5db] border-[#3a9d91]",
+  "bg-[#ffbf86] border-[#ca7a2f]",
+  "bg-[#d9ec73] border-[#91a838]",
 ];
 
 const modelKey = (model: ModelEntry) =>
@@ -87,6 +87,7 @@ export default function Home() {
   );
   const [messages, setMessages] = useState<ChatMessage[]>(seedMessages);
   const [toolsInput, setToolsInput] = useState(seedTools);
+  const [activeTokenIndex, setActiveTokenIndex] = useState<number | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([
     "openai/gpt-5.5",
     "qwen/qwen3.6-flash",
@@ -153,6 +154,9 @@ export default function Home() {
     () => tokenize(activeText, selectedModel, selectedExactEncodingName ? exactEncodings[selectedExactEncodingName] : undefined),
     [activeText, exactEncodings, selectedExactEncodingName, selectedModel],
   );
+  const visibleSegments = tokenResult.segments.slice(0, 600);
+  const visibleTokenIds = tokenResult.tokens.slice(0, 900);
+  const activeToken = activeTokenIndex === null ? null : tokenResult.segments[activeTokenIndex];
 
   const compareRows = useMemo(
     () =>
@@ -394,26 +398,56 @@ export default function Home() {
                 <h2 className="text-[13px] font-semibold">Tokens</h2>
                 <span className="text-[12px] text-[#8b8378]">{selectedModel.family}</span>
               </div>
-              <div className="min-h-[190px] rounded-[14px] border border-[#e1d9ce] bg-[#fcfbf7] p-4 font-mono text-[13px] leading-7">
-                {tokenResult.segments.length ? (
-                  tokenResult.segments.slice(0, 600).map((segment) => (
+              <div className="min-h-[190px] rounded-[14px] border border-[#d7cfc3] bg-[#fffdf9] p-4 font-mono text-[13px] leading-8 shadow-inner">
+                {visibleSegments.length ? (
+                  visibleSegments.map((segment) => {
+                    const active = activeTokenIndex === segment.index;
+                    return (
                     <span
                       key={`${segment.index}-${segment.token}`}
                       title={`${segment.token}`}
-                      className={`${swatches[segment.index % swatches.length]} rounded-[5px] px-0.5 py-0.5`}
+                      onMouseEnter={() => setActiveTokenIndex(segment.index)}
+                      onFocus={() => setActiveTokenIndex(segment.index)}
+                      tabIndex={0}
+                      className={`${swatches[segment.index % swatches.length]} mx-px cursor-default rounded-[5px] border px-1 py-0.5 text-[#191714] shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)] outline-none transition ${
+                        active ? "relative z-10 ring-2 ring-[#1d1b18] ring-offset-1 ring-offset-white" : "hover:ring-1 hover:ring-[#1d1b18]/50"
+                      }`}
                     >
                       {segment.text}
                     </span>
-                  ))
+                    );
+                  })
                 ) : (
                   <span className="text-[#8b8378]"> </span>
                 )}
               </div>
 
               <div className="mt-4">
-                <div className="mb-3 text-[13px] font-semibold">Token ids</div>
-                <div className="max-h-[168px] overflow-auto rounded-[14px] border border-[#e1d9ce] bg-[#fcfbf7] p-4 font-mono text-[12px] leading-6 text-[#5f574d]">
-                  {tokenResult.tokens.slice(0, 900).join(", ")}
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="text-[13px] font-semibold">Token ids</div>
+                  <div className="min-w-0 truncate rounded-full border border-[#e1d9ce] bg-white px-2.5 py-1 font-mono text-[11px] text-[#5f574d]">
+                    {activeToken ? `${activeToken.token} · #${activeToken.index}` : `${formatNumber(tokenResult.count)} total`}
+                  </div>
+                </div>
+                <div className="max-h-[168px] overflow-auto rounded-[14px] border border-[#d7cfc3] bg-[#fffdf9] p-3 font-mono text-[12px] leading-7 text-[#5f574d] shadow-inner">
+                  {visibleTokenIds.map((token, index) => {
+                    const active = activeTokenIndex === index;
+                    return (
+                      <span
+                        key={`${index}-${token}`}
+                        onMouseEnter={() => setActiveTokenIndex(index)}
+                        onFocus={() => setActiveTokenIndex(index)}
+                        tabIndex={0}
+                        className={`mr-1.5 inline-flex rounded-[6px] border px-1.5 py-0.5 outline-none transition ${
+                          active
+                            ? "border-[#1d1b18] bg-[#1d1b18] text-white shadow-sm"
+                            : "border-[#e1d9ce] bg-white hover:border-[#1d1b18]/50"
+                        }`}
+                      >
+                        {token}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
 
