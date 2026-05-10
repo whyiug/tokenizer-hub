@@ -119,7 +119,7 @@ export default function Home() {
 
     let cancelled = false;
     import("@/lib/exact-tokenizer").then(({ loadEncoding }) => {
-      exactTokenizerSpecs.forEach((spec) => {
+      const loadAndStore = (spec: ModelEntry["tokenizer"]) =>
         loadEncoding(spec)
           .then((encoding) => {
             if (cancelled) return;
@@ -135,6 +135,10 @@ export default function Home() {
               [spec.key]: true,
             }));
           });
+
+      const [primarySpec, ...backgroundSpecs] = exactTokenizerSpecs;
+      loadAndStore(primarySpec).finally(() => {
+        backgroundSpecs.forEach(loadAndStore);
       });
     });
 
