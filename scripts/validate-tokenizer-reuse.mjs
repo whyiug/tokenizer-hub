@@ -41,10 +41,30 @@ const tokenizerJsonSize = async (repo) => {
   return size;
 };
 
+const sizesByAsset = new Map();
+
+for (const asset of tokenizerAssets) {
+  if (!Number.isFinite(asset.tokenizerJsonSize) || asset.tokenizerJsonSize <= 4096) {
+    console.error(`Missing tokenizerJsonSize for ${asset.key}.`);
+    process.exitCode = 1;
+    continue;
+  }
+
+  const duplicate = sizesByAsset.get(asset.tokenizerJsonSize);
+  if (duplicate) {
+    console.error(
+      `Duplicate tokenizerJsonSize ${asset.tokenizerJsonSize} for ${duplicate} and ${asset.key}; merge repos into one asset.`,
+    );
+    process.exitCode = 1;
+  } else {
+    sizesByAsset.set(asset.tokenizerJsonSize, asset.key);
+  }
+}
+
 for (const asset of tokenizerAssets) {
   const repos = [asset.repo, ...(asset.reuseRepos ?? [])];
   const sizes = await Promise.all(repos.map(async (repo) => ({ repo, size: await tokenizerJsonSize(repo) })));
-  const expected = sizes[0].size;
+  const expected = asset.tokenizerJsonSize;
   const mismatched = sizes.filter((item) => item.size !== expected);
   if (mismatched.length) {
     console.error(`Tokenizer reuse mismatch for ${asset.key}. Expected ${expected} bytes.`);

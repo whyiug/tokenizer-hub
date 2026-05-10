@@ -4,11 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "backend": "uvicorn backend.app.main:app --host 127.0.0.1 --port 8000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "validate:models": "node scripts/validate-model-catalog.mjs",
     "validate:tokenizer-reuse": "node scripts/validate-tokenizer-reuse.mjs",
+    "validate:backend-architecture": "node scripts/validate-backend-architecture.mjs",
+    "validate:backend-api": "node scripts/validate-backend-api.mjs",
     "validate:exact-ui": "node scripts/validate-exact-tokenizer-ui.mjs",
     "validate:all-models-ui": "node scripts/validate-all-models-ui.mjs",
     "download:tokenizers": "node scripts/download-tokenizer-assets.mjs"

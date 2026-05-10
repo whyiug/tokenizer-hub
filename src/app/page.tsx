@@ -15,14 +15,18 @@ import { useEffect, useMemo, useState } from "react";
 import { DEFAULT_MODEL, MODELS, type ModelEntry } from "@/data/models";
 import {
   compactContext,
-  exactTokenizerKeyForModel,
   formatNumber,
   renderChat,
   renderTools,
-  tokenize,
-  type ExactEncoding,
   type ChatMessage,
+  type TokenResult,
 } from "@/lib/tokenizer";
+import {
+  DEFAULT_TOKENIZER_API_BASE,
+  isUnavailableResult,
+  tokenizeModels,
+  type BackendTokenizeResult,
+} from "@/lib/tokenizer-api";
 
 type Mode = "raw" | "chat" | "tools" | "compare";
 
@@ -75,6 +79,32 @@ const swatches = [
 const modelKey = (model: ModelEntry) =>
   `${model.name} ${model.provider} ${model.id} ${model.family} ${model.tokenizer.key} ${model.tags.join(" ")}`.toLowerCase();
 
+const modelsById = new Map(MODELS.map((model) => [model.id, model]));
+const tokenizerApiBase = process.env.NEXT_PUBLIC_TOKENIZER_API_BASE ?? DEFAULT_TOKENIZER_API_BASE;
+
+type TokenFetchState = {
+  requestKey: string;
+  results: Record<string, TokenResult>;
+  errors: Record<string, string>;
+};
+
+const emptyTokenResults: Record<string, TokenResult> = {};
+const emptyTokenErrors: Record<string, string> = {};
+
+const tokenResultFromBackend = (result: BackendTokenizeResult, text: string, model: ModelEntry): TokenResult => ({
+  text,
+  tokens: result.tokens,
+  segments: result.segments.map((segment) => ({
+    index: segment.index,
+    token: segment.id,
+    text: segment.text,
+    piece: segment.piece,
+  })),
+  count: result.count,
+  contextUsed: model.context ? Math.min(100, (result.count / model.context) * 100) : 0,
+  remaining: Math.max(0, model.context - result.count),
+});
+
 export default function Home() {
   const [mode, setMode] = useState<Mode>("chat");
   const [selectedModelId, setSelectedModelId] = useState(DEFAULT_MODEL.id);
@@ -92,8 +122,7 @@ export default function Home() {
     "openai/gpt-4",
     "openai/gpt-3.5-turbo",
   ]);
-  const [exactEncodings, setExactEncodings] = useState<Partial<Record<string, ExactEncoding>>>({});
-  const [tokenizerFailures, setTokenizerFailures] = useState<Record<string, true>>({});
+  const [tokenState, setTokenState] = useState<TokenFetchState>({ requestKey: "", results: {}, errors: {} });
 
   const providers = useMemo(
     () => ["All", ...Array.from(new Set(MODELS.map((model) => model.provider))).sort()],
@@ -105,47 +134,6 @@ export default function Home() {
     () => compareIds.map((id) => MODELS.find((model) => model.id === id)).filter((model): model is ModelEntry => Boolean(model)),
     [compareIds],
   );
-  const exactTokenizerSpecs = useMemo(() => {
-    const specsByKey = new Map<string, ModelEntry["tokenizer"]>();
-    [selectedModel, ...compareModels].forEach((model) => {
-      specsByKey.set(model.tokenizer.key, model.tokenizer);
-    });
-    return Array.from(specsByKey.values());
-  }, [compareModels, selectedModel]);
-  const exactTokenizerSpecsKey = exactTokenizerSpecs.map((spec) => spec.key).join("|");
-
-  useEffect(() => {
-    if (!exactTokenizerSpecs.length) return;
-
-    let cancelled = false;
-    import("@/lib/exact-tokenizer").then(({ loadEncoding }) => {
-      const loadAndStore = (spec: ModelEntry["tokenizer"]) =>
-        loadEncoding(spec)
-          .then((encoding) => {
-            if (cancelled) return;
-            setExactEncodings((current) => ({
-              ...current,
-              [encoding.key]: encoding,
-            }));
-          })
-          .catch(() => {
-            if (cancelled) return;
-            setTokenizerFailures((current) => ({
-              ...current,
-              [spec.key]: true,
-            }));
-          });
-
-      const [primarySpec, ...backgroundSpecs] = exactTokenizerSpecs;
-      loadAndStore(primarySpec).finally(() => {
-        backgroundSpecs.forEach(loadAndStore);
-      });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [exactTokenizerSpecs, exactTokenizerSpecsKey]);
 
   const filteredModels = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -162,14 +150,69 @@ export default function Home() {
     return renderChat(messages, selectedModel.family);
   }, [messages, mode, rawInput, selectedModel.family, toolsInput]);
 
-  const selectedTokenizerKey = exactTokenizerKeyForModel(selectedModel);
-  const selectedExactEncoding = exactEncodings[selectedTokenizerKey];
-  const selectedTokenizerFailed = Boolean(tokenizerFailures[selectedTokenizerKey]);
-  const exactTokenizerPending = !selectedExactEncoding && !selectedTokenizerFailed;
-  const tokenResult = useMemo(
-    () => tokenize(activeText, selectedModel, selectedExactEncoding),
-    [activeText, selectedExactEncoding, selectedModel],
+  const tokenModelIds = useMemo(
+    () => Array.from(new Set([selectedModel.id, ...compareModels.map((model) => model.id)])),
+    [compareModels, selectedModel.id],
   );
+  const tokenRequestKey = useMemo(() => JSON.stringify([activeText, tokenModelIds]), [activeText, tokenModelIds]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    tokenizeModels(tokenModelIds, activeText, controller.signal, tokenizerApiBase)
+      .then((batch) => {
+        const nextResults: Record<string, TokenResult> = {};
+        const nextErrors: Record<string, string> = {};
+
+        batch.results.forEach((result) => {
+          if (isUnavailableResult(result)) {
+            nextErrors[result.modelId] = result.error;
+            return;
+          }
+
+          const model = modelsById.get(result.modelId);
+          if (!model) {
+            nextErrors[result.modelId] = "Unknown model";
+            return;
+          }
+
+          nextResults[result.modelId] = tokenResultFromBackend(result, activeText, model);
+        });
+
+        tokenModelIds.forEach((modelId) => {
+          if (!nextResults[modelId] && !nextErrors[modelId]) {
+            nextErrors[modelId] = "Tokenizer unavailable";
+          }
+        });
+
+        setTokenState({ requestKey: tokenRequestKey, results: nextResults, errors: nextErrors });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        const message = error instanceof Error ? error.message : "Tokenizer unavailable";
+        setTokenState({
+          requestKey: tokenRequestKey,
+          results: {},
+          errors: Object.fromEntries(tokenModelIds.map((modelId) => [modelId, message])),
+        });
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [activeText, tokenModelIds, tokenRequestKey]);
+
+  const tokenStateReady = tokenState.requestKey === tokenRequestKey;
+  const tokenErrors = useMemo(
+    () => (tokenStateReady ? tokenState.errors : emptyTokenErrors),
+    [tokenState.errors, tokenStateReady],
+  );
+  const tokenResults = useMemo(
+    () => (tokenStateReady ? tokenState.results : emptyTokenResults),
+    [tokenState.results, tokenStateReady],
+  );
+  const tokenResult = tokenResults[selectedModel.id] ?? null;
+  const selectedTokenPending = !tokenStateReady || (!tokenResult && !tokenErrors[selectedModel.id]);
   const visibleSegments = tokenResult?.segments.slice(0, 600) ?? [];
   const visibleTokenIds = tokenResult?.tokens.slice(0, 900) ?? [];
   const activeToken = activeTokenIndex === null || !tokenResult ? null : (tokenResult.segments[activeTokenIndex] ?? null);
@@ -178,12 +221,12 @@ export default function Home() {
     () =>
       compareModels
         .map((model) => {
-          const tokenizerKey = exactTokenizerKeyForModel(model);
-          const result = tokenize(activeText, model, exactEncodings[tokenizerKey]);
-          return { model, result, pending: !exactEncodings[tokenizerKey] && !tokenizerFailures[tokenizerKey] };
+          const result = tokenResults[model.id] ?? null;
+          const pending = !tokenStateReady || (!result && !tokenErrors[model.id]);
+          return { model, result, pending };
         })
         .sort((a, b) => (a.result?.count ?? Number.POSITIVE_INFINITY) - (b.result?.count ?? Number.POSITIVE_INFINITY)),
-    [activeText, compareModels, exactEncodings, tokenizerFailures],
+    [compareModels, tokenErrors, tokenResults, tokenStateReady],
   );
 
   const updateMessage = (id: string, patch: Partial<ChatMessage>) => {
@@ -410,17 +453,17 @@ export default function Home() {
             <div className="grid grid-cols-3 border-b border-[#eee7dd]">
               <Metric
                 label="Tokens"
-                value={tokenResult ? formatNumber(tokenResult.count) : exactTokenizerPending ? "..." : "—"}
+                value={tokenResult ? formatNumber(tokenResult.count) : selectedTokenPending ? "..." : "—"}
                 testId="token-count"
               />
               <Metric
                 label="Context"
-                value={tokenResult ? `${tokenResult.contextUsed.toFixed(2)}%` : exactTokenizerPending ? "..." : "—"}
+                value={tokenResult ? `${tokenResult.contextUsed.toFixed(2)}%` : selectedTokenPending ? "..." : "—"}
                 testId="context-used"
               />
               <Metric
                 label="Remaining"
-                value={tokenResult ? compactContext(tokenResult.remaining) : exactTokenizerPending ? "..." : "—"}
+                value={tokenResult ? compactContext(tokenResult.remaining) : selectedTokenPending ? "..." : "—"}
                 testId="remaining-context"
               />
             </div>
@@ -429,11 +472,11 @@ export default function Home() {
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-[13px] font-semibold">Tokens</h2>
                 <span className="text-[12px] text-[#8b8378]">
-                  {exactTokenizerPending ? "loading exact" : tokenResult ? selectedModel.family : "unavailable"}
+                  {selectedTokenPending ? "loading exact" : tokenResult ? selectedModel.family : "unavailable"}
                 </span>
               </div>
               <div className="min-h-[190px] rounded-[14px] border border-[#d7cfc3] bg-[#fffdf9] p-4 font-mono text-[13px] leading-8 shadow-inner">
-                {exactTokenizerPending ? (
+                {selectedTokenPending ? (
                   <span className="text-[#8b8378]">Loading exact tokenizer...</span>
                 ) : visibleSegments.length ? (
                   visibleSegments.map((segment) => {
@@ -464,7 +507,7 @@ export default function Home() {
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="text-[13px] font-semibold">Token ids</div>
                   <div className="min-w-0 truncate rounded-full border border-[#e1d9ce] bg-white px-2.5 py-1 font-mono text-[11px] text-[#5f574d]">
-                    {exactTokenizerPending
+                    {selectedTokenPending
                       ? "loading"
                       : activeToken
                         ? `${activeToken.token} · #${activeToken.index}`
@@ -474,7 +517,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="max-h-[168px] overflow-auto rounded-[14px] border border-[#d7cfc3] bg-[#fffdf9] p-3 font-mono text-[12px] leading-7 text-[#5f574d] shadow-inner">
-                  {exactTokenizerPending ? (
+                  {selectedTokenPending ? (
                     <span className="text-[#8b8378]">Exact token ids will appear when the tokenizer finishes loading.</span>
                   ) : !tokenResult ? (
                     <span className="text-[#8b8378]">No exact tokenizer is available for this model.</span>

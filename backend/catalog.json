@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "source": "mirrors src/data/models.ts tokenizer assignments for the Python backend",
+  "tokenizers": {
+    "tiktoken:o200k_base": {
+      "type": "tiktoken",
+      "encoding": "o200k_base",
+      "label": "o200k_base"
+    },
+    "tiktoken:cl100k_base": {
+      "type": "tiktoken",
+      "encoding": "cl100k_base",
+      "label": "cl100k_base"
+    },
+    "tiktoken:p50k_base": {
+      "type": "tiktoken",
+      "encoding": "p50k_base",
+      "label": "p50k_base"
+    },
+    "tiktoken:gpt2": {
+      "type": "tiktoken",
+      "encoding": "gpt2",
+      "label": "gpt2"
+    },
+    "hf:qwen3": {
+      "type": "hf",
+      "asset": "qwen3",
+      "repo": "Qwen/Qwen3-8B",
+      "label": "qwen3"
+    },
+    "hf:deepseek-v31": {
+      "type": "hf",
+      "asset": "deepseek-v31",
+      "repo": "deepseek-ai/DeepSeek-V3.1-Base",
+      "label": "deepseek-v31"
+    },
+    "hf:deepseek-r1": {
+      "type": "hf",
+      "asset": "deepseek-r1",
+      "repo": "deepseek-ai/DeepSeek-R1",
+      "label": "deepseek-r1"
+    },
+    "hf:minimax-m27": {
+      "type": "hf",
+      "asset": "minimax-m27",
+      "repo": "MiniMaxAI/MiniMax-M2.7",
+      "label": "minimax-m27"
+    },
+    "hf:mimo-v25-pro": {
+      "type": "hf",
+      "asset": "mimo-v25-pro",
+      "repo": "XiaomiMiMo/MiMo-V2.5-Pro",
+      "label": "mimo-v25-pro"
+    },
+    "hf:mimo-v25": {
+      "type": "hf",
+      "asset": "mimo-v25",
+      "repo": "XiaomiMiMo/MiMo-V2.5",
+      "label": "mimo-v25"
+    },
+    "hf:glm5": {
+      "type": "hf",
+      "asset": "glm5",
+      "repo": "zai-org/GLM-5.1",
+      "label": "glm5"
+    },
+    "hf:llama2": {
+      "type": "hf",
+      "asset": "llama2",
+      "repo": "NousResearch/Llama-2-7b-chat-hf",
+      "label": "llama2"
+    },
+    "hf:llama2-70b": {
+      "type": "hf",
+      "asset": "llama2-70b",
+      "repo": "TheBloke/Llama-2-70B-Chat-GPTQ",
+      "label": "llama2-70b"
+    },
+    "hf:llama3": {
+      "type": "hf",
+      "asset": "llama3",
+      "repo": "NousResearch/Meta-Llama-3-8B-Instruct",
+      "label": "llama3"
+    }
+  },
+  "models": [
+    { "id": "openai/gpt-5.5", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-5.5-pro", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-5.4", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-5.4-mini", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-5.4-nano", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-5", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-5-mini", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-5-nano", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-4.1", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-4.1-mini", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-4o", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-4o-mini", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/o4-mini", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/o3", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/o3-mini", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-oss-120b", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-oss-20b", "tokenizerKey": "tiktoken:o200k_base" },
+    { "id": "openai/gpt-4", "tokenizerKey": "tiktoken:cl100k_base" },
+    { "id": "openai/gpt-4-turbo", "tokenizerKey": "tiktoken:cl100k_base" },
+    { "id": "openai/gpt-3.5-turbo", "tokenizerKey": "tiktoken:cl100k_base" },
+    { "id": "openai/text-davinci-003", "tokenizerKey": "tiktoken:p50k_base" },
+    { "id": "openai/code-davinci-002", "tokenizerKey": "tiktoken:p50k_base" },
+    { "id": "qwen/qwen3-235b-a22b", "tokenizerKey": "hf:qwen3" },
+    { "id": "qwen/qwen3-32b", "tokenizerKey": "hf:qwen3" },
+    { "id": "qwen/qwen3-14b", "tokenizerKey": "hf:qwen3" },
+    { "id": "qwen/qwen3-8b", "tokenizerKey": "hf:qwen3" },
+    { "id": "deepseek/deepseek-v3.1", "tokenizerKey": "hf:deepseek-v31" },
+    { "id": "deepseek/deepseek-r1", "tokenizerKey": "hf:deepseek-r1" },
+    { "id": "deepseek/deepseek-r1-0528", "tokenizerKey": "hf:deepseek-r1" },
+    { "id": "minimax/minimax-m2.7", "tokenizerKey": "hf:minimax-m27" },
+    { "id": "minimax/minimax-m2.5", "tokenizerKey": "hf:minimax-m27" },
+    { "id": "xiaomi/mimo-v2.5-pro", "tokenizerKey": "hf:mimo-v25-pro" },
+    { "id": "xiaomi/mimo-v2.5", "tokenizerKey": "hf:mimo-v25" },
+    { "id": "z-ai/glm-5.1", "tokenizerKey": "hf:glm5" },
+    { "id": "z-ai/glm-5", "tokenizerKey": "hf:glm5" },
+    { "id": "z-ai/glm-4.7-flash", "tokenizerKey": "hf:glm5" },
+    { "id": "meta/llama-3.1-8b-instruct", "tokenizerKey": "hf:llama3" },
+    { "id": "meta/llama-2-70b-chat", "tokenizerKey": "hf:llama2-70b" },
+    { "id": "meta/llama-2-7b-chat", "tokenizerKey": "hf:llama2" }
+  ]
+}
