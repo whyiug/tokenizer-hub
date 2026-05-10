@@ -1,11 +1,16 @@
 {
   "version": 1,
-  "source": "mirrors src/data/models.ts tokenizer assignments for the Python backend",
+  "source": "generated from src/data/models.ts by scripts/sync-backend-catalog.mjs",
   "tokenizers": {
     "tiktoken:o200k_base": {
       "type": "tiktoken",
       "encoding": "o200k_base",
       "label": "o200k_base"
+    },
+    "tiktoken:o200k_harmony": {
+      "type": "tiktoken",
+      "encoding": "o200k_harmony",
+      "label": "o200k_harmony"
     },
     "tiktoken:cl100k_base": {
       "type": "tiktoken",
@@ -28,11 +33,41 @@
       "repo": "Qwen/Qwen3-8B",
       "label": "qwen3"
     },
+    "hf:qwen35-36": {
+      "type": "hf",
+      "asset": "qwen35-36",
+      "repo": "Qwen/Qwen3.6-35B-A3B",
+      "label": "qwen35-36"
+    },
+    "hf:qwen25": {
+      "type": "hf",
+      "asset": "qwen25",
+      "repo": "Qwen/Qwen2.5-72B-Instruct",
+      "label": "qwen25"
+    },
+    "hf:qwen3-coder": {
+      "type": "hf",
+      "asset": "qwen3-coder",
+      "repo": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+      "label": "qwen3-coder"
+    },
     "hf:deepseek-v31": {
       "type": "hf",
       "asset": "deepseek-v31",
       "repo": "deepseek-ai/DeepSeek-V3.1-Base",
       "label": "deepseek-v31"
+    },
+    "hf:deepseek-v32": {
+      "type": "hf",
+      "asset": "deepseek-v32",
+      "repo": "deepseek-ai/DeepSeek-V3.2",
+      "label": "deepseek-v32"
+    },
+    "hf:deepseek-v3-0324": {
+      "type": "hf",
+      "asset": "deepseek-v3-0324",
+      "repo": "deepseek-ai/DeepSeek-V3-0324",
+      "label": "deepseek-v3-0324"
     },
     "hf:deepseek-r1": {
       "type": "hf",
@@ -64,6 +99,12 @@
       "repo": "zai-org/GLM-5.1",
       "label": "glm5"
     },
+    "hf:glm45-47": {
+      "type": "hf",
+      "asset": "glm45-47",
+      "repo": "zai-org/GLM-4.7",
+      "label": "glm45-47"
+    },
     "hf:llama2": {
       "type": "hf",
       "asset": "llama2",
@@ -84,44 +125,249 @@
     }
   },
   "models": [
-    { "id": "openai/gpt-5.5", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-5.5-pro", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-5.4", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-5.4-mini", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-5.4-nano", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-5", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-5-mini", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-5-nano", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-4.1", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-4.1-mini", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-4o", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-4o-mini", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/o4-mini", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/o3", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/o3-mini", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-oss-120b", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-oss-20b", "tokenizerKey": "tiktoken:o200k_base" },
-    { "id": "openai/gpt-4", "tokenizerKey": "tiktoken:cl100k_base" },
-    { "id": "openai/gpt-4-turbo", "tokenizerKey": "tiktoken:cl100k_base" },
-    { "id": "openai/gpt-3.5-turbo", "tokenizerKey": "tiktoken:cl100k_base" },
-    { "id": "openai/text-davinci-003", "tokenizerKey": "tiktoken:p50k_base" },
-    { "id": "openai/code-davinci-002", "tokenizerKey": "tiktoken:p50k_base" },
-    { "id": "qwen/qwen3-235b-a22b", "tokenizerKey": "hf:qwen3" },
-    { "id": "qwen/qwen3-32b", "tokenizerKey": "hf:qwen3" },
-    { "id": "qwen/qwen3-14b", "tokenizerKey": "hf:qwen3" },
-    { "id": "qwen/qwen3-8b", "tokenizerKey": "hf:qwen3" },
-    { "id": "deepseek/deepseek-v3.1", "tokenizerKey": "hf:deepseek-v31" },
-    { "id": "deepseek/deepseek-r1", "tokenizerKey": "hf:deepseek-r1" },
-    { "id": "deepseek/deepseek-r1-0528", "tokenizerKey": "hf:deepseek-r1" },
-    { "id": "minimax/minimax-m2.7", "tokenizerKey": "hf:minimax-m27" },
-    { "id": "minimax/minimax-m2.5", "tokenizerKey": "hf:minimax-m27" },
-    { "id": "xiaomi/mimo-v2.5-pro", "tokenizerKey": "hf:mimo-v25-pro" },
-    { "id": "xiaomi/mimo-v2.5", "tokenizerKey": "hf:mimo-v25" },
-    { "id": "z-ai/glm-5.1", "tokenizerKey": "hf:glm5" },
-    { "id": "z-ai/glm-5", "tokenizerKey": "hf:glm5" },
-    { "id": "z-ai/glm-4.7-flash", "tokenizerKey": "hf:glm5" },
-    { "id": "meta/llama-3.1-8b-instruct", "tokenizerKey": "hf:llama3" },
-    { "id": "meta/llama-2-70b-chat", "tokenizerKey": "hf:llama2-70b" },
-    { "id": "meta/llama-2-7b-chat", "tokenizerKey": "hf:llama2" }
+    {
+      "id": "openai/gpt-5",
+      "tokenizerKey": "tiktoken:o200k_base"
+    },
+    {
+      "id": "openai/gpt-5-mini",
+      "tokenizerKey": "tiktoken:o200k_base"
+    },
+    {
+      "id": "openai/gpt-5-nano",
+      "tokenizerKey": "tiktoken:o200k_base"
+    },
+    {
+      "id": "openai/gpt-4.1",
+      "tokenizerKey": "tiktoken:o200k_base"
+    },
+    {
+      "id": "openai/gpt-4.1-mini",
+      "tokenizerKey": "tiktoken:o200k_base"
+    },
+    {
+      "id": "openai/gpt-4o",
+      "tokenizerKey": "tiktoken:o200k_base"
+    },
+    {
+      "id": "openai/gpt-4o-mini",
+      "tokenizerKey": "tiktoken:o200k_base"
+    },
+    {
+      "id": "openai/o4-mini",
+      "tokenizerKey": "tiktoken:o200k_base"
+    },
+    {
+      "id": "openai/o3",
+      "tokenizerKey": "tiktoken:o200k_base"
+    },
+    {
+      "id": "openai/o3-mini",
+      "tokenizerKey": "tiktoken:o200k_base"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "tokenizerKey": "tiktoken:o200k_harmony"
+    },
+    {
+      "id": "openai/gpt-oss-20b",
+      "tokenizerKey": "tiktoken:o200k_harmony"
+    },
+    {
+      "id": "openai/gpt-4",
+      "tokenizerKey": "tiktoken:cl100k_base"
+    },
+    {
+      "id": "openai/gpt-4-turbo",
+      "tokenizerKey": "tiktoken:cl100k_base"
+    },
+    {
+      "id": "openai/gpt-4-0613",
+      "tokenizerKey": "tiktoken:cl100k_base"
+    },
+    {
+      "id": "openai/gpt-4-0314",
+      "tokenizerKey": "tiktoken:cl100k_base"
+    },
+    {
+      "id": "openai/gpt-4-32k-0613",
+      "tokenizerKey": "tiktoken:cl100k_base"
+    },
+    {
+      "id": "openai/gpt-4-32k-0314",
+      "tokenizerKey": "tiktoken:cl100k_base"
+    },
+    {
+      "id": "openai/gpt-3.5-turbo",
+      "tokenizerKey": "tiktoken:cl100k_base"
+    },
+    {
+      "id": "openai/gpt-3.5-turbo-0301",
+      "tokenizerKey": "tiktoken:cl100k_base"
+    },
+    {
+      "id": "openai/text-davinci-003",
+      "tokenizerKey": "tiktoken:p50k_base"
+    },
+    {
+      "id": "openai/text-davinci-002",
+      "tokenizerKey": "tiktoken:p50k_base"
+    },
+    {
+      "id": "openai/code-davinci-002",
+      "tokenizerKey": "tiktoken:p50k_base"
+    },
+    {
+      "id": "qwen/qwen3-235b-a22b",
+      "tokenizerKey": "hf:qwen3"
+    },
+    {
+      "id": "qwen/qwen3-32b",
+      "tokenizerKey": "hf:qwen3"
+    },
+    {
+      "id": "qwen/qwen3-14b",
+      "tokenizerKey": "hf:qwen3"
+    },
+    {
+      "id": "qwen/qwen3-8b",
+      "tokenizerKey": "hf:qwen3"
+    },
+    {
+      "id": "qwen/qwen3.6-35b-a3b",
+      "tokenizerKey": "hf:qwen35-36"
+    },
+    {
+      "id": "qwen/qwen3.6-27b",
+      "tokenizerKey": "hf:qwen35-36"
+    },
+    {
+      "id": "qwen/qwen3.5-35b-a3b",
+      "tokenizerKey": "hf:qwen35-36"
+    },
+    {
+      "id": "qwen/qwen3.5-27b",
+      "tokenizerKey": "hf:qwen35-36"
+    },
+    {
+      "id": "qwen/qwen3.5-9b",
+      "tokenizerKey": "hf:qwen35-36"
+    },
+    {
+      "id": "qwen/qwen2.5-72b-instruct",
+      "tokenizerKey": "hf:qwen25"
+    },
+    {
+      "id": "qwen/qwen2.5-coder-32b-instruct",
+      "tokenizerKey": "hf:qwen25"
+    },
+    {
+      "id": "qwen/qwen3-coder-480b-a35b-instruct",
+      "tokenizerKey": "hf:qwen3-coder"
+    },
+    {
+      "id": "qwen/qwen3-coder-30b-a3b-instruct",
+      "tokenizerKey": "hf:qwen3-coder"
+    },
+    {
+      "id": "deepseek/deepseek-v3.1",
+      "tokenizerKey": "hf:deepseek-v31"
+    },
+    {
+      "id": "deepseek/deepseek-v3.2",
+      "tokenizerKey": "hf:deepseek-v32"
+    },
+    {
+      "id": "deepseek/deepseek-v3.2-speciale",
+      "tokenizerKey": "hf:deepseek-v32"
+    },
+    {
+      "id": "deepseek/deepseek-v3.2-exp",
+      "tokenizerKey": "hf:deepseek-v31"
+    },
+    {
+      "id": "deepseek/deepseek-v3.1-terminus",
+      "tokenizerKey": "hf:deepseek-v31"
+    },
+    {
+      "id": "deepseek/deepseek-v3-0324",
+      "tokenizerKey": "hf:deepseek-v3-0324"
+    },
+    {
+      "id": "deepseek/deepseek-r1",
+      "tokenizerKey": "hf:deepseek-r1"
+    },
+    {
+      "id": "deepseek/deepseek-r1-0528",
+      "tokenizerKey": "hf:deepseek-r1"
+    },
+    {
+      "id": "minimax/minimax-m2.7",
+      "tokenizerKey": "hf:minimax-m27"
+    },
+    {
+      "id": "minimax/minimax-m2.5",
+      "tokenizerKey": "hf:minimax-m27"
+    },
+    {
+      "id": "minimax/minimax-m2.1",
+      "tokenizerKey": "hf:minimax-m27"
+    },
+    {
+      "id": "minimax/minimax-m2",
+      "tokenizerKey": "hf:minimax-m27"
+    },
+    {
+      "id": "xiaomi/mimo-v2.5-pro",
+      "tokenizerKey": "hf:mimo-v25-pro"
+    },
+    {
+      "id": "xiaomi/mimo-v2.5",
+      "tokenizerKey": "hf:mimo-v25"
+    },
+    {
+      "id": "xiaomi/mimo-v2-flash",
+      "tokenizerKey": "hf:qwen3"
+    },
+    {
+      "id": "z-ai/glm-5.1",
+      "tokenizerKey": "hf:glm5"
+    },
+    {
+      "id": "z-ai/glm-5",
+      "tokenizerKey": "hf:glm5"
+    },
+    {
+      "id": "z-ai/glm-4.7-flash",
+      "tokenizerKey": "hf:glm5"
+    },
+    {
+      "id": "z-ai/glm-4.7",
+      "tokenizerKey": "hf:glm45-47"
+    },
+    {
+      "id": "z-ai/glm-4.6",
+      "tokenizerKey": "hf:glm45-47"
+    },
+    {
+      "id": "z-ai/glm-4.5",
+      "tokenizerKey": "hf:glm45-47"
+    },
+    {
+      "id": "z-ai/glm-4.5-air",
+      "tokenizerKey": "hf:glm45-47"
+    },
+    {
+      "id": "meta/llama-3.1-8b-instruct",
+      "tokenizerKey": "hf:llama3"
+    },
+    {
+      "id": "meta/llama-2-70b-chat",
+      "tokenizerKey": "hf:llama2-70b"
+    },
+    {
+      "id": "meta/llama-2-7b-chat",
+      "tokenizerKey": "hf:llama2"
+    }
   ]
 }

@@ -14,12 +14,11 @@
     "validate:backend-api": "node scripts/validate-backend-api.mjs",
     "validate:exact-ui": "node scripts/validate-exact-tokenizer-ui.mjs",
     "validate:all-models-ui": "node scripts/validate-all-models-ui.mjs",
+    "sync:backend-catalog": "node scripts/sync-backend-catalog.mjs",
     "download:tokenizers": "node scripts/download-tokenizer-assets.mjs"
   },
   "dependencies": {
-    "@huggingface/tokenizers": "^0.1.3",
     "clsx": "^2.1.1",
-    "js-tiktoken": "^1.0.21",
     "lucide-react": "^1.14.0",
     "next": "16.2.6",
     "react": "19.2.4",

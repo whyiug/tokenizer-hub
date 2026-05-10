@@ -13,9 +13,11 @@ const noProxyEnv = {
   all_proxy: "",
 };
 
-const headersFor = (url) =>
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const curlOnce = (args, url) =>
   new Promise((resolve, reject) => {
-    const child = spawn("curl", ["-I", "-L", "--fail", "--max-time", "45", "-sS", url], { env: noProxyEnv });
+    const child = spawn("curl", [...args, url], { env: noProxyEnv });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk) => {
@@ -31,14 +33,86 @@ const headersFor = (url) =>
     });
   });
 
+const retryCurl = async (args, url) => {
+  let lastError;
+  for (let attempt = 1; attempt <= 6; attempt += 1) {
+    try {
+      return await curlOnce(args, url);
+    } catch (error) {
+      lastError = error;
+      if (attempt < 6) await sleep(2_000 * attempt);
+    }
+  }
+  throw lastError;
+};
+
+const headersOnce = (url) =>
+  curlOnce(
+    [
+      "--http1.1",
+      "-I",
+      "-L",
+      "--fail",
+      "--retry",
+      "6",
+      "--retry-delay",
+      "2",
+      "--connect-timeout",
+      "20",
+      "--max-time",
+      "90",
+      "-sS",
+    ],
+    url,
+  );
+
+const headersFor = async (url) => {
+  let lastError;
+  for (let attempt = 1; attempt <= 6; attempt += 1) {
+    try {
+      return await headersOnce(url);
+    } catch (error) {
+      lastError = error;
+      if (attempt < 6) await sleep(2_000 * attempt);
+    }
+  }
+  throw lastError;
+};
+
+const metadataFor = (repo) =>
+  retryCurl(
+    [
+      "--http1.1",
+      "--fail",
+      "--retry",
+      "6",
+      "--retry-delay",
+      "2",
+      "--connect-timeout",
+      "20",
+      "--max-time",
+      "90",
+      "-sS",
+    ],
+    `${endpoint}/api/models/${repo}?blobs=true`,
+  );
+
 const tokenizerJsonSize = async (repo) => {
+  const metadata = JSON.parse(await metadataFor(repo));
+  const tokenizerJson = metadata.siblings?.find((item) => item.rfilename === "tokenizer.json");
+  const metadataSizes = [tokenizerJson?.size, tokenizerJson?.lfs?.size].filter(
+    (size) => Number.isFinite(size) && size > 4096,
+  );
+  const metadataSize = metadataSizes.at(-1);
+  if (metadataSize) return metadataSize;
+
   const headers = await headersFor(`${endpoint}/${repo}/resolve/main/tokenizer.json`);
   const linkedSizes = [...headers.matchAll(/^x-linked-size:\s*(\d+)/gim)].map((match) => Number(match[1]));
   const contentLengths = [...headers.matchAll(/^content-length:\s*(\d+)/gim)].map((match) => Number(match[1]));
-  const sizes = [...linkedSizes, ...contentLengths].filter((size) => Number.isFinite(size) && size > 4096);
-  const size = sizes.at(-1);
-  if (!size) throw new Error(`Could not determine tokenizer.json size for ${repo}`);
-  return size;
+  const headerSizes = [...linkedSizes, ...contentLengths].filter((size) => Number.isFinite(size) && size > 4096);
+  const headerSize = headerSizes.at(-1);
+  if (!headerSize) throw new Error(`Could not determine tokenizer.json size for ${repo}`);
+  return headerSize;
 };
 
 const sizesByAsset = new Map();

@@ -141,7 +141,7 @@ export default function Home() {
       const providerMatch = provider === "All" || model.provider === provider;
       const queryMatch = !needle || modelKey(model).includes(needle);
       return providerMatch && queryMatch;
-    }).slice(0, 42);
+    });
   }, [provider, query]);
 
   const activeText = useMemo(() => {
