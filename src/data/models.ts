@@ -179,4 +179,4 @@ export const MODELS: ModelEntry[] = [
   model("voyage/voyage-3.5", "Voyage 3.5", "Voyage", "other", 32_000, false, "Estimated", "Global", ["embedding"]),
 ];
 
-export const DEFAULT_MODEL = MODELS[0];
+export const DEFAULT_MODEL = MODELS.find((model) => model.id === "openai/gpt-3.5-turbo") ?? MODELS[0];

@@ -32,12 +32,12 @@ const seedMessages: ChatMessage[] = [
   {
     id: "system",
     role: "system",
-    content: "You are a precise assistant. Keep the answer short.",
+    content: "You are a helpful assistant",
   },
   {
     id: "user",
     role: "user",
-    content: "解释 tokenizer_hub 为什么适合中文模型对比。",
+    content: "",
   },
 ];
 
