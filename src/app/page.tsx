@@ -205,10 +205,18 @@ export default function Home() {
               <span className="absolute right-2 top-3 size-3.5 rounded-[4px] bg-[#d9c8ad]" />
               <span className="absolute bottom-2 left-3.5 size-3.5 rounded-[4px] bg-[#bd8a36]" />
             </div>
-            <div>
-              <h1 className="text-[15px] font-semibold leading-none tracking-[0.01em]">tokenizer_hub</h1>
-              <div className="mt-1 h-px w-16 bg-[#d8c5a8]" />
-            </div>
+            <h1
+              aria-label="tokenizer hub"
+              className="flex items-center gap-1.5 rounded-[11px] border border-[#ded5ca] bg-[#fffaf2] px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88)]"
+            >
+              <span className="font-mono text-[12px] font-semibold leading-none tracking-[0.08em] text-[#2c2924]">
+                tokenizer
+              </span>
+              <span className="h-3.5 w-px bg-[#d8c5a8]" />
+              <span className="rounded-[6px] bg-[#3b3328] px-1.5 py-1 font-mono text-[11px] font-semibold leading-none tracking-[0.08em] text-[#fff7eb]">
+                hub
+              </span>
+            </h1>
           </div>
 
           <div className="relative flex min-w-0 flex-1 items-center">
