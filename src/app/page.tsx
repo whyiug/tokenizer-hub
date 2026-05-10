@@ -118,35 +118,25 @@ export default function Home() {
     if (!exactTokenizerSpecs.length) return;
 
     let cancelled = false;
-    import("@/lib/exact-tokenizer")
-      .then(({ loadEncoding }) =>
-        Promise.all(
-          exactTokenizerSpecs.map((spec) =>
-            loadEncoding(spec)
-              .then((encoding) => ({ encoding, key: spec.key, ok: true as const }))
-              .catch(() => ({ key: spec.key, ok: false as const })),
-          ),
-        ),
-      )
-      .then((results) => {
-        if (cancelled) return;
-        const encodings: ExactEncoding[] = [];
-        const failedKeys: string[] = [];
-        results.forEach((result) => {
-          if (result.ok) encodings.push(result.encoding);
-          else failedKeys.push(result.key);
-        });
-        setExactEncodings((current) => ({
-          ...current,
-          ...Object.fromEntries(encodings.map((encoding) => [encoding.key, encoding])),
-        }));
-        if (failedKeys.length) {
-          setTokenizerFailures((current) => ({
-            ...current,
-            ...Object.fromEntries(failedKeys.map((key) => [key, true])),
-          }));
-        }
+    import("@/lib/exact-tokenizer").then(({ loadEncoding }) => {
+      exactTokenizerSpecs.forEach((spec) => {
+        loadEncoding(spec)
+          .then((encoding) => {
+            if (cancelled) return;
+            setExactEncodings((current) => ({
+              ...current,
+              [encoding.key]: encoding,
+            }));
+          })
+          .catch(() => {
+            if (cancelled) return;
+            setTokenizerFailures((current) => ({
+              ...current,
+              [spec.key]: true,
+            }));
+          });
       });
+    });
 
     return () => {
       cancelled = true;
