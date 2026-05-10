@@ -8,7 +8,6 @@ import {
   MessageSquare,
   PanelRight,
   Search,
-  Sparkles,
   Type,
   X,
 } from "lucide-react";
@@ -64,14 +63,14 @@ const modeMeta: Record<Mode, { label: string; icon: React.ElementType }> = {
 };
 
 const swatches = [
-  "bg-[#ffd76f] border-[#d19900]",
-  "bg-[#9ee8b4] border-[#4aa367]",
-  "bg-[#9fd8ff] border-[#4f92c6]",
-  "bg-[#ffaea8] border-[#cf675f]",
-  "bg-[#ccb7ff] border-[#8064c6]",
-  "bg-[#92e5db] border-[#3a9d91]",
-  "bg-[#ffbf86] border-[#ca7a2f]",
-  "bg-[#d9ec73] border-[#91a838]",
+  "bg-[#eadcc7] border-[#c9b38e]",
+  "bg-[#dbe6d7] border-[#a8b99e]",
+  "bg-[#d7e3ea] border-[#9eb1bd]",
+  "bg-[#ead8d2] border-[#c7a8a0]",
+  "bg-[#e3ddeb] border-[#b5a8c8]",
+  "bg-[#d7e4e1] border-[#9fb7b1]",
+  "bg-[#eee2c6] border-[#cfbb84]",
+  "bg-[#dee3cf] border-[#aeb895]",
 ];
 
 const modelKey = (model: ModelEntry) =>
@@ -200,12 +199,15 @@ export default function Home() {
     <main className="min-h-screen bg-[#fbfaf8] text-[#1d1b18]">
       <div className="mx-auto flex min-h-screen w-full max-w-[1480px] flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-3 rounded-[14px] border border-[#e7e0d7] bg-[#fffefa]/85 px-4 py-3 shadow-[0_1px_0_rgba(29,27,24,0.03)] backdrop-blur sm:flex-row sm:items-center">
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-[9px] border border-[#ded5ca] bg-[#f6f0e7]">
-              <Sparkles className="size-4 text-[#7b5b2e]" aria-hidden />
+          <div className="flex shrink-0 items-center gap-3 pr-1">
+            <div className="relative size-9 rounded-[12px] border border-[#ded5ca] bg-[#f7f1e8] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(29,27,24,0.04)]">
+              <span className="absolute left-2 top-2 size-3.5 rounded-[4px] bg-[#2f302e]" />
+              <span className="absolute right-2 top-3 size-3.5 rounded-[4px] bg-[#d9c8ad]" />
+              <span className="absolute bottom-2 left-3.5 size-3.5 rounded-[4px] bg-[#bd8a36]" />
             </div>
             <div>
-              <h1 className="text-[15px] font-semibold tracking-[-0.01em]">tokenizer_hub</h1>
+              <h1 className="text-[15px] font-semibold leading-none tracking-[0.01em]">tokenizer_hub</h1>
+              <div className="mt-1 h-px w-16 bg-[#d8c5a8]" />
             </div>
           </div>
 
@@ -409,8 +411,10 @@ export default function Home() {
                       onMouseEnter={() => setActiveTokenIndex(segment.index)}
                       onFocus={() => setActiveTokenIndex(segment.index)}
                       tabIndex={0}
-                      className={`${swatches[segment.index % swatches.length]} mx-px cursor-default rounded-[5px] border px-1 py-0.5 text-[#191714] shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)] outline-none transition ${
-                        active ? "relative z-10 ring-2 ring-[#1d1b18] ring-offset-1 ring-offset-white" : "hover:ring-1 hover:ring-[#1d1b18]/50"
+                      className={`${swatches[segment.index % swatches.length]} mx-px cursor-default rounded-[5px] border px-1 py-0.5 text-[#211f1b] shadow-[inset_0_-1px_0_rgba(29,27,24,0.08)] outline-none transition ${
+                        active
+                          ? "relative z-10 ring-2 ring-[#8a6a3d] ring-offset-1 ring-offset-white"
+                          : "hover:border-[#8a6a3d] hover:ring-2 hover:ring-[#eadfcf]"
                       }`}
                     >
                       {segment.text}
@@ -440,8 +444,8 @@ export default function Home() {
                         tabIndex={0}
                         className={`mr-1.5 inline-flex rounded-[6px] border px-1.5 py-0.5 outline-none transition ${
                           active
-                            ? "border-[#1d1b18] bg-[#1d1b18] text-white shadow-sm"
-                            : "border-[#e1d9ce] bg-white hover:border-[#1d1b18]/50"
+                            ? "border-[#8a6a3d] bg-[#3b3328] text-[#fffaf2] shadow-sm"
+                            : "border-[#e1d9ce] bg-white hover:border-[#8a6a3d] hover:bg-[#fbf6ee]"
                         }`}
                       >
                         {token}
