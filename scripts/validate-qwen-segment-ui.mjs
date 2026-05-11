@@ -18,7 +18,7 @@ try {
     throw new Error(`Expected document title "Tokenizer Hub", got "${title}"`);
   }
 
-  await page.getByRole("button", { name: /Raw/ }).click();
+  await page.getByRole("button", { name: "Raw", exact: true }).click();
   await page.getByTestId("raw-input").fill(" 这");
   await page.getByPlaceholder("Model").fill("qwen/qwen2.5-72b-instruct");
   await page.locator("aside").getByRole("button").filter({ hasText: "Qwen2.5 72B Instruct" }).first().click();

@@ -21,7 +21,7 @@ try {
     const tokenCount = document.querySelector('[data-testid="token-count"]')?.textContent?.trim();
     return tokenCount && tokenCount !== "..." && tokenCount !== "—";
   });
-  await page.getByRole("button", { name: /Raw/ }).click();
+  await page.getByRole("button", { name: "Raw", exact: true }).click();
   await page.getByTestId("raw-input").fill(sample);
   const search = page.getByPlaceholder("Model");
 

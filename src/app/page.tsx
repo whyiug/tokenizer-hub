@@ -27,6 +27,7 @@ import {
   tokenizeModels,
   type BackendTokenizeResult,
 } from "@/lib/tokenizer-api";
+import { INITIAL_TOKEN_MODEL_IDS, INITIAL_TOKEN_RESULTS, INITIAL_TOKEN_TEXT } from "@/data/initial-token-results";
 
 type Mode = "raw" | "chat" | "tools" | "compare";
 
@@ -81,6 +82,7 @@ const modelKey = (model: ModelEntry) =>
 
 const modelsById = new Map(MODELS.map((model) => [model.id, model]));
 const tokenizerApiBase = process.env.NEXT_PUBLIC_TOKENIZER_API_BASE ?? DEFAULT_TOKENIZER_API_BASE;
+const defaultCompareIds = ["openai/gpt-5.5", "openai/gpt-4.1", "openai/gpt-4", "openai/gpt-3.5-turbo"];
 
 type TokenFetchState = {
   requestKey: string;
@@ -116,6 +118,18 @@ const tokenResultFromBackend = (result: BackendTokenizeResult, text: string, mod
   remaining: Math.max(0, model.context - result.count),
 });
 
+const initialTokenState: TokenFetchState = {
+  requestKey: JSON.stringify([INITIAL_TOKEN_TEXT, INITIAL_TOKEN_MODEL_IDS]),
+  results: Object.fromEntries(
+    INITIAL_TOKEN_RESULTS.map((result) => {
+      const model = modelsById.get(result.modelId);
+      if (!model) return null;
+      return [result.modelId, tokenResultFromBackend(result, INITIAL_TOKEN_TEXT, model)] as const;
+    }).filter((entry): entry is readonly [string, TokenResult] => entry !== null),
+  ),
+  errors: {},
+};
+
 const formatTokenIds = (tokens: number[]) => tokens.map(String).join(", ");
 
 const formatTokenRange = (tokenStart: number, tokenEnd: number) =>
@@ -130,13 +144,8 @@ export default function Home() {
   const [messages, setMessages] = useState<ChatMessage[]>(seedMessages);
   const [toolsInput, setToolsInput] = useState(seedTools);
   const [activeSegmentIndex, setActiveSegmentIndex] = useState<number | null>(null);
-  const [compareIds, setCompareIds] = useState<string[]>([
-    "openai/gpt-5.5",
-    "openai/gpt-4.1",
-    "openai/gpt-4",
-    "openai/gpt-3.5-turbo",
-  ]);
-  const [tokenState, setTokenState] = useState<TokenFetchState>({ requestKey: "", results: {}, errors: {} });
+  const [compareIds, setCompareIds] = useState<string[]>(defaultCompareIds);
+  const [tokenState, setTokenState] = useState<TokenFetchState>(initialTokenState);
 
   const providers = useMemo(
     () => ["All", ...Array.from(new Set(MODELS.map((model) => model.provider))).sort()],
