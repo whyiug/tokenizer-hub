@@ -1,5 +1,7 @@
 # Tokenizer Hub
 
+Language: English | [简体中文](README.zh-CN.md)
+
 Tokenizer Hub is a compact tokenizer workbench for comparing token usage across modern AI models, with stronger coverage for Chinese model families.
 
 Experience URL:
