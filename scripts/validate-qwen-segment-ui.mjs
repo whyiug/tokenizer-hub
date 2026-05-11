@@ -8,6 +8,7 @@ page.setDefaultTimeout(90_000);
 
 try {
   await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
   await page.waitForFunction(() => {
     const tokenCount = document.querySelector('[data-testid="token-count"]')?.textContent?.trim();
     return tokenCount && tokenCount !== "..." && tokenCount !== "—";

@@ -213,10 +213,16 @@ export default function Home() {
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         const message = error instanceof Error ? error.message : "Tokenizer unavailable";
-        setTokenState({
-          requestKey: tokenRequestKey,
-          results: {},
-          errors: Object.fromEntries(tokenModelIds.map((modelId) => [modelId, message])),
+        setTokenState((currentState) => {
+          if (currentState.requestKey === tokenRequestKey && Object.keys(currentState.results).length > 0) {
+            return currentState;
+          }
+
+          return {
+            requestKey: tokenRequestKey,
+            results: {},
+            errors: Object.fromEntries(tokenModelIds.map((modelId) => [modelId, message])),
+          };
         });
       });
 

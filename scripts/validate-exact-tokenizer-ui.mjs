@@ -9,6 +9,7 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
 
 try {
   await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 20_000 });
+  await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
   await page.waitForFunction(() => {
     const tokenCount = document.querySelector('[data-testid="token-count"]')?.textContent?.trim();
     return tokenCount && tokenCount !== "..." && tokenCount !== "—";
