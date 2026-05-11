@@ -10,6 +10,8 @@ Tokenizer Hub 是一个简洁的 tokenizer 工作台，用于比较现代 AI 模
 https://tokenizer.haoqi.xin/
 ```
 
+![Tokenizer Hub 界面示意图](docs/assets/tokenizer-hub-preview.png)
+
 产品刻意保持简单：界面不提供导出或下载，不下载模型权重，不做后台同步任务，也不为不支持的 tokenizer 提供估算 token 数。
 
 ## 核心功能

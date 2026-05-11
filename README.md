@@ -10,6 +10,8 @@ Experience URL:
 https://tokenizer.haoqi.xin/
 ```
 
+![Tokenizer Hub preview](docs/assets/tokenizer-hub-preview.png)
+
 The product is intentionally simple: no export/download UI, no model weights, no background sync jobs, and no estimated token counts for unsupported tokenizers.
 
 ## Core Features
