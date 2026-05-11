@@ -22,6 +22,8 @@ const requiredIds = [
   "meta/llama-2-70b-chat",
   "deepseek/deepseek-v3.2",
   "deepseek/deepseek-v3-0324",
+  "deepseek/deepseek-v4-pro",
+  "deepseek/deepseek-v4-flash",
   "qwen/qwen3.6-35b-a3b",
   "qwen/qwen3-coder-30b-a3b-instruct",
   "xiaomi/mimo-v2-flash",

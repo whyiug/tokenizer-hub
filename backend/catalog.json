@@ -274,6 +274,14 @@
       "tokenizerKey": "hf:deepseek-v31"
     },
     {
+      "id": "deepseek/deepseek-v4-pro",
+      "tokenizerKey": "hf:deepseek-v32"
+    },
+    {
+      "id": "deepseek/deepseek-v4-flash",
+      "tokenizerKey": "hf:deepseek-v32"
+    },
+    {
       "id": "deepseek/deepseek-v3.2",
       "tokenizerKey": "hf:deepseek-v32"
     },

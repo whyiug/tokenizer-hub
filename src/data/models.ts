@@ -156,6 +156,8 @@ export const MODELS: ModelEntry[] = [
   model("qwen/qwen3-coder-30b-a3b-instruct", "Qwen3 Coder 30B A3B", "Qwen", "qwen", TOKENIZERS.qwen3Coder, 160_000, true, "China", ["code"]),
 
   model("deepseek/deepseek-v3.1", "DeepSeek V3.1", "DeepSeek", "deepseek", TOKENIZERS.deepseekV31, 163_840, true, "China"),
+  model("deepseek/deepseek-v4-pro", "DeepSeek V4 Pro", "DeepSeek", "deepseek", TOKENIZERS.deepseekV32, 1_048_576, true, "China", ["reasoning", "code"]),
+  model("deepseek/deepseek-v4-flash", "DeepSeek V4 Flash", "DeepSeek", "deepseek", TOKENIZERS.deepseekV32, 1_048_576, true, "China", ["reasoning", "code"]),
   model("deepseek/deepseek-v3.2", "DeepSeek V3.2", "DeepSeek", "deepseek", TOKENIZERS.deepseekV32, 131_072, true, "China"),
   model("deepseek/deepseek-v3.2-speciale", "DeepSeek V3.2 Speciale", "DeepSeek", "deepseek", TOKENIZERS.deepseekV32, 163_840, true, "China"),
   model("deepseek/deepseek-v3.2-exp", "DeepSeek V3.2 Exp", "DeepSeek", "deepseek", TOKENIZERS.deepseekV31, 163_840, true, "China"),
