@@ -97,54 +97,77 @@ const metadataFor = (repo) =>
     `${endpoint}/api/models/${repo}?blobs=true`,
   );
 
-const tokenizerJsonSize = async (repo) => {
+const remoteFileSize = async (repo, filename) => {
   const metadata = JSON.parse(await metadataFor(repo));
-  const tokenizerJson = metadata.siblings?.find((item) => item.rfilename === "tokenizer.json");
-  const metadataSizes = [tokenizerJson?.size, tokenizerJson?.lfs?.size].filter(
-    (size) => Number.isFinite(size) && size > 4096,
-  );
+  const remoteFile = metadata.siblings?.find((item) => item.rfilename === filename);
+  const metadataSizes = [remoteFile?.size, remoteFile?.lfs?.size].filter((size) => Number.isFinite(size) && size > 0);
   const metadataSize = metadataSizes.at(-1);
   if (metadataSize) return metadataSize;
 
-  const headers = await headersFor(`${endpoint}/${repo}/resolve/main/tokenizer.json`);
+  const headers = await headersFor(`${endpoint}/${repo}/resolve/main/${filename}`);
   const linkedSizes = [...headers.matchAll(/^x-linked-size:\s*(\d+)/gim)].map((match) => Number(match[1]));
   const contentLengths = [...headers.matchAll(/^content-length:\s*(\d+)/gim)].map((match) => Number(match[1]));
-  const headerSizes = [...linkedSizes, ...contentLengths].filter((size) => Number.isFinite(size) && size > 4096);
+  const headerSizes = [...linkedSizes, ...contentLengths].filter((size) => Number.isFinite(size) && size > 0);
   const headerSize = headerSizes.at(-1);
-  if (!headerSize) throw new Error(`Could not determine tokenizer.json size for ${repo}`);
+  if (!headerSize) throw new Error(`Could not determine ${filename} size for ${repo}`);
   return headerSize;
 };
+
+const requiredFilesFor = (asset) => {
+  if (asset.type === "hf_tiktoken") {
+    return [
+      { filename: "tiktoken.model", expected: asset.tiktokenModelSize },
+      { filename: "tokenizer_config.json", expected: asset.tokenizerConfigSize },
+    ];
+  }
+  return [{ filename: "tokenizer.json", expected: asset.tokenizerJsonSize }];
+};
+
+const assetSignature = (asset) =>
+  requiredFilesFor(asset)
+    .map((file) => `${file.filename}:${file.expected}`)
+    .join("|");
 
 const sizesByAsset = new Map();
 
 for (const asset of tokenizerAssets) {
-  if (!Number.isFinite(asset.tokenizerJsonSize) || asset.tokenizerJsonSize <= 4096) {
-    console.error(`Missing tokenizerJsonSize for ${asset.key}.`);
-    process.exitCode = 1;
-    continue;
+  for (const file of requiredFilesFor(asset)) {
+    if (!Number.isFinite(file.expected) || file.expected <= 0) {
+      console.error(`Missing ${file.filename} size for ${asset.key}.`);
+      process.exitCode = 1;
+      continue;
+    }
   }
 
-  const duplicate = sizesByAsset.get(asset.tokenizerJsonSize);
+  const signature = assetSignature(asset);
+  const duplicate = sizesByAsset.get(signature);
   if (duplicate) {
-    console.error(
-      `Duplicate tokenizerJsonSize ${asset.tokenizerJsonSize} for ${duplicate} and ${asset.key}; merge repos into one asset.`,
-    );
+    console.error(`Duplicate tokenizer signature ${signature} for ${duplicate} and ${asset.key}; merge repos into one asset.`);
     process.exitCode = 1;
   } else {
-    sizesByAsset.set(asset.tokenizerJsonSize, asset.key);
+    sizesByAsset.set(signature, asset.key);
   }
 }
 
 for (const asset of tokenizerAssets) {
   const repos = [asset.repo, ...(asset.reuseRepos ?? [])];
-  const sizes = await Promise.all(repos.map(async (repo) => ({ repo, size: await tokenizerJsonSize(repo) })));
-  const expected = asset.tokenizerJsonSize;
-  const mismatched = sizes.filter((item) => item.size !== expected);
+  const files = requiredFilesFor(asset);
+  const sizes = await Promise.all(
+    repos.flatMap((repo) =>
+      files.map(async (file) => ({
+        repo,
+        filename: file.filename,
+        expected: file.expected,
+        size: await remoteFileSize(repo, file.filename),
+      })),
+    ),
+  );
+  const mismatched = sizes.filter((item) => item.size !== item.expected);
   if (mismatched.length) {
-    console.error(`Tokenizer reuse mismatch for ${asset.key}. Expected ${expected} bytes.`);
-    for (const item of sizes) console.error(`- ${item.repo}: ${item.size}`);
+    console.error(`Tokenizer reuse mismatch for ${asset.key}.`);
+    for (const item of sizes) console.error(`- ${item.repo}/${item.filename}: ${item.size} (expected ${item.expected})`);
     process.exitCode = 1;
   } else {
-    console.log(`${asset.key}: ${repos.length} repo(s), tokenizer.json size ${expected}`);
+    console.log(`${asset.key}: ${repos.length} repo(s), ${assetSignature(asset)}`);
   }
 }

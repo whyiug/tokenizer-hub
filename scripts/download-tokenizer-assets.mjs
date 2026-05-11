@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { tokenizerAssets } from "./tokenizer-assets.mjs";
 
 const force = process.argv.includes("--force");
-const files = ["tokenizer.json", "tokenizer_config.json"];
+const filesFor = (asset) => (asset.type === "hf_tiktoken" ? ["tiktoken.model", "tokenizer_config.json"] : ["tokenizer.json", "tokenizer_config.json"]);
 const endpoint = (process.env.HF_ENDPOINT || "https://hf-mirror.com").replace(/\/$/, "");
 const noProxyEnv = {
   ...process.env,
@@ -87,7 +87,7 @@ const download = async (asset, filename) => {
 const results = [];
 
 for (const asset of tokenizerAssets) {
-  for (const filename of files) {
+  for (const filename of filesFor(asset)) {
     try {
       results.push(await download(asset, filename));
     } catch (error) {

@@ -53,7 +53,7 @@ class TiktokenBackendTokenizer:
 
     def tokenize(self, text: str) -> dict[str, Any]:
         ids = self._encoding.encode(text, allowed_special="all", disallowed_special=())
-        segments = self._segments_from_ids(text, ids)
+        segments = _segments_from_tiktoken_ids(text, ids, self._encoding)
 
         return {
             "tokenizerKey": self.key,
@@ -62,51 +62,6 @@ class TiktokenBackendTokenizer:
             "tokens": ids,
             "segments": segments,
         }
-
-    def _segments_from_ids(self, text: str, ids: list[int]) -> list[dict[str, Any]]:
-        segments: list[dict[str, Any]] = []
-        pending_bytes = bytearray()
-        pending_ids: list[int] = []
-        pending_start = 0
-        cursor = 0
-
-        for token_index, token_id in enumerate(ids):
-            if not pending_ids:
-                pending_start = token_index
-            pending_ids.append(token_id)
-            pending_bytes.extend(self._encoding.decode_single_token_bytes(token_id))
-
-            try:
-                token_text = bytes(pending_bytes).decode("utf-8")
-            except UnicodeDecodeError:
-                continue
-
-            if not text.startswith(token_text, cursor):
-                continue
-
-            text_start = cursor
-            cursor += len(token_text)
-            segments.append(_make_segment(len(segments), pending_start, pending_ids, token_text, text_start, cursor))
-            pending_bytes.clear()
-            pending_ids = []
-
-        if pending_ids:
-            try:
-                token_text = bytes(pending_bytes).decode("utf-8")
-            except UnicodeDecodeError:
-                token_text = bytes(pending_bytes).decode("utf-8", errors="replace")
-            segments.append(
-                _make_segment(
-                    len(segments),
-                    pending_start,
-                    pending_ids,
-                    token_text,
-                    cursor,
-                    cursor + len(token_text),
-                ),
-            )
-
-        return segments
 
 
 class HfBackendTokenizer:
@@ -222,6 +177,131 @@ class HfBackendTokenizer:
             pass
 
         return ""
+
+
+class HfTiktokenBackendTokenizer:
+    pat_str = "|".join(
+        [
+            r"""[\p{Han}]+""",
+            r"""[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}&&[^\p{Han}]]*[\p{Ll}\p{Lm}\p{Lo}\p{M}&&[^\p{Han}]]+(?i:'s|'t|'re|'ve|'m|'ll|'d)?""",
+            r"""[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}&&[^\p{Han}]]+[\p{Ll}\p{Lm}\p{Lo}\p{M}&&[^\p{Han}]]*(?i:'s|'t|'re|'ve|'m|'ll|'d)?""",
+            r"""\p{N}{1,3}""",
+            r""" ?[^\s\p{L}\p{N}]+[\r\n]*""",
+            r"""\s*[\r\n]+""",
+            r"""\s+(?!\S)""",
+            r"""\s+""",
+        ],
+    )
+
+    def __init__(self, spec: TokenizerSpec, tokenizer_root: Path) -> None:
+        if not spec.asset:
+            raise TokenizerError(f"Missing HF tiktoken asset for {spec.key}")
+
+        asset_dir = tokenizer_root / spec.asset
+        model_file = asset_dir / "tiktoken.model"
+        config_file = asset_dir / "tokenizer_config.json"
+        if not model_file.exists():
+            raise TokenizerError(f"Missing tiktoken model for {spec.key}: {model_file}")
+        if not config_file.exists():
+            raise TokenizerError(f"Missing tokenizer config for {spec.key}: {config_file}")
+
+        import tiktoken
+        from tiktoken.load import load_tiktoken_bpe
+
+        with config_file.open("r", encoding="utf-8") as file:
+            config = json.load(file)
+
+        mergeable_ranks = load_tiktoken_bpe(str(model_file))
+        num_base_tokens = len(mergeable_ranks)
+        added_tokens = {
+            int(token_id): str(value["content"])
+            for token_id, value in config.get("added_tokens_decoder", {}).items()
+            if isinstance(value, dict) and "content" in value
+        }
+        special_tokens = {
+            added_tokens.get(token_id, f"<|reserved_token_{token_id}|>"): token_id
+            for token_id in range(num_base_tokens, num_base_tokens + 256)
+        }
+
+        self.key = spec.key
+        self.label = spec.label
+        self._special_tokens_by_id = {token_id: token for token, token_id in special_tokens.items()}
+        self._encoding = tiktoken.Encoding(
+            name=spec.asset,
+            pat_str=self.pat_str,
+            mergeable_ranks=mergeable_ranks,
+            special_tokens=special_tokens,
+        )
+
+    def tokenize(self, text: str) -> dict[str, Any]:
+        ids = self._encoding.encode(text, allowed_special="all", disallowed_special=())
+        segments = _segments_from_tiktoken_ids(text, ids, self._encoding, self._special_tokens_by_id)
+
+        return {
+            "tokenizerKey": self.key,
+            "label": self.label,
+            "count": len(ids),
+            "tokens": ids,
+            "segments": segments,
+        }
+
+
+def _segments_from_tiktoken_ids(
+    text: str,
+    ids: list[int],
+    encoding: Any,
+    special_tokens_by_id: dict[int, str] | None = None,
+) -> list[dict[str, Any]]:
+    segments: list[dict[str, Any]] = []
+    pending_bytes = bytearray()
+    pending_ids: list[int] = []
+    pending_start = 0
+    cursor = 0
+
+    for token_index, token_id in enumerate(ids):
+        if not pending_ids:
+            pending_start = token_index
+        pending_ids.append(token_id)
+
+        try:
+            pending_bytes.extend(encoding.decode_single_token_bytes(token_id))
+        except KeyError:
+            token_text = (special_tokens_by_id or {}).get(token_id)
+            if token_text is None:
+                token_text = encoding.decode([token_id])
+            pending_bytes.extend(token_text.encode("utf-8"))
+
+        try:
+            token_text = bytes(pending_bytes).decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+
+        if not text.startswith(token_text, cursor):
+            continue
+
+        text_start = cursor
+        cursor += len(token_text)
+        segments.append(_make_segment(len(segments), pending_start, pending_ids, token_text, text_start, cursor))
+        pending_bytes.clear()
+        pending_ids = []
+
+    if pending_ids:
+        try:
+            token_text = bytes(pending_bytes).decode("utf-8")
+        except UnicodeDecodeError:
+            token_text = bytes(pending_bytes).decode("utf-8", errors="replace")
+        segments.append(
+            _make_segment(
+                len(segments),
+                pending_start,
+                pending_ids,
+                token_text,
+                cursor,
+                cursor + len(token_text),
+            ),
+        )
+
+    return segments
 
 
 def _make_segment(
@@ -347,22 +427,36 @@ class TokenizerRegistry:
             return
 
         for asset_dir in sorted(self.tokenizer_root.iterdir()):
-            if not asset_dir.is_dir() or not (asset_dir / "tokenizer.json").exists():
+            if not asset_dir.is_dir():
                 continue
-            key = f"hf:{asset_dir.name}"
-            self._specs.setdefault(
-                key,
-                TokenizerSpec(
-                    key=key,
-                    type="hf",
-                    label=asset_dir.name,
-                    asset=asset_dir.name,
-                ),
-            )
+            if (asset_dir / "tokenizer.json").exists():
+                key = f"hf:{asset_dir.name}"
+                self._specs.setdefault(
+                    key,
+                    TokenizerSpec(
+                        key=key,
+                        type="hf",
+                        label=asset_dir.name,
+                        asset=asset_dir.name,
+                    ),
+                )
+            if (asset_dir / "tiktoken.model").exists():
+                key = f"hf_tiktoken:{asset_dir.name}"
+                self._specs.setdefault(
+                    key,
+                    TokenizerSpec(
+                        key=key,
+                        type="hf_tiktoken",
+                        label=asset_dir.name,
+                        asset=asset_dir.name,
+                    ),
+                )
 
     def _load_tokenizer(self, spec: TokenizerSpec) -> BackendTokenizer:
         if spec.type == "tiktoken":
             return TiktokenBackendTokenizer(spec)
         if spec.type == "hf":
             return HfBackendTokenizer(spec, self.tokenizer_root)
+        if spec.type == "hf_tiktoken":
+            return HfTiktokenBackendTokenizer(spec, self.tokenizer_root)
         raise TokenizerError(f"Unsupported tokenizer type for {spec.key}: {spec.type}")

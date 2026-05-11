@@ -18,6 +18,13 @@ for (const match of source.matchAll(/(\w+):\s*hf\("([^"]+)",\s*"([^"]+)"\)/g)) {
   tokenizers[key] = { type: "hf", asset, repo, label: asset };
 }
 
+for (const match of source.matchAll(/(\w+):\s*hfTiktoken\("([^"]+)",\s*"([^"]+)"\)/g)) {
+  const [, name, asset, repo] = match;
+  const key = `hf_tiktoken:${asset}`;
+  tokenizerKeysByName.set(name, key);
+  tokenizers[key] = { type: "hf_tiktoken", asset, repo, label: asset };
+}
+
 const models = [];
 for (const match of source.matchAll(/model\("([^"]+)",[^\n]*TOKENIZERS\.(\w+)/g)) {
   const [, id, tokenizerName] = match;

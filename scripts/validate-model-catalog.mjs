@@ -29,11 +29,20 @@ const requiredIds = [
   "xiaomi/mimo-v2-flash",
   "minimax/minimax-m2.1",
   "z-ai/glm-4.5",
+  "moonshotai/kimi-k2.6",
+  "moonshotai/kimi-k2.5",
+  "moonshotai/kimi-k2-thinking",
+  "moonshotai/kimi-k2-0905",
+  "moonshotai/kimi-k2",
+  "minimax/minimax-m1",
+  "minimax/minimax-01",
+  "z-ai/glm-4-32b",
 ];
 
 const modelCount = (source.match(/model\(/g) ?? []).length;
 const missing = requiredIds.filter((id) => !source.includes(`model("${id}"`));
 const hfAssets = [...source.matchAll(/hf\("([^"]+)"/g)].map((match) => match[1]);
+const hfTiktokenAssets = [...source.matchAll(/hfTiktoken\("([^"]+)"/g)].map((match) => match[1]);
 const forbidden = [
   { file: "src/data/models.ts", label: "Estimated status", hit: source.includes("Estimated") },
   { file: "src/data/models.ts", label: "unverified GPT-5.5 ids", hit: source.includes('model("openai/gpt-5.5') },
@@ -52,8 +61,8 @@ if (modelCount > 300) {
   process.exitCode = 1;
 }
 
-if (modelCount < 60) {
-  console.error(`Expected at least 60 exact models after the first China LLM refresh, found ${modelCount}.`);
+if (modelCount < 70) {
+  console.error(`Expected at least 70 exact models after the China LLM refresh, found ${modelCount}.`);
   process.exitCode = 1;
 }
 
@@ -79,6 +88,16 @@ for (const asset of hfAssets) {
   }
 }
 
+for (const asset of hfTiktokenAssets) {
+  for (const filename of ["tiktoken.model", "tokenizer_config.json"]) {
+    const assetPath = path.join("backend", "tokenizers", asset, filename);
+    if (!fs.existsSync(assetPath)) {
+      console.error(`Missing tokenizer asset: ${assetPath}`);
+      process.exitCode = 1;
+    }
+  }
+}
+
 if (!process.exitCode) {
-  console.log(`Model catalog ok: ${modelCount} exact models, ${new Set(hfAssets).size} shared HF tokenizers.`);
+  console.log(`Model catalog ok: ${modelCount} exact models, ${new Set([...hfAssets, ...hfTiktokenAssets]).size} shared HF tokenizers.`);
 }

@@ -5,6 +5,7 @@ export type TokenizerFamily =
   | "gpt2"
   | "qwen"
   | "deepseek"
+  | "kimi"
   | "minimax"
   | "mimo"
   | "glm"
@@ -22,13 +23,21 @@ export type HfTokenizerKey =
   | "deepseek-v3-0324"
   | "deepseek-r1"
   | "minimax-m27"
+  | "minimax-m1"
+  | "minimax-text-01"
   | "mimo-v25-pro"
   | "mimo-v25"
   | "glm5"
   | "glm45-47"
+  | "glm4-32b"
   | "llama2"
   | "llama2-70b"
   | "llama3";
+
+export type HfTiktokenTokenizerKey =
+  | "kimi-k26"
+  | "kimi-k2-thinking"
+  | "kimi-k2-instruct";
 
 export type TokenizerSpec =
   | {
@@ -40,6 +49,12 @@ export type TokenizerSpec =
       type: "hf";
       key: `hf:${HfTokenizerKey}`;
       asset: HfTokenizerKey;
+      repo: string;
+    }
+  | {
+      type: "hf_tiktoken";
+      key: `hf_tiktoken:${HfTiktokenTokenizerKey}`;
+      asset: HfTiktokenTokenizerKey;
       repo: string;
     };
 
@@ -77,7 +92,7 @@ const model = (
   tags,
 });
 
-export const MODEL_SNAPSHOT_DATE = "2026-05-10";
+export const MODEL_SNAPSHOT_DATE = "2026-05-11";
 
 const tiktoken = (encoding: TiktokenEncodingName): TokenizerSpec => ({
   type: "tiktoken",
@@ -88,6 +103,13 @@ const tiktoken = (encoding: TiktokenEncodingName): TokenizerSpec => ({
 const hf = (asset: HfTokenizerKey, repo: string): TokenizerSpec => ({
   type: "hf",
   key: `hf:${asset}`,
+  asset,
+  repo,
+});
+
+const hfTiktoken = (asset: HfTiktokenTokenizerKey, repo: string): TokenizerSpec => ({
+  type: "hf_tiktoken",
+  key: `hf_tiktoken:${asset}`,
   asset,
   repo,
 });
@@ -106,11 +128,17 @@ const TOKENIZERS = {
   deepseekV32: hf("deepseek-v32", "deepseek-ai/DeepSeek-V3.2"),
   deepseekV30324: hf("deepseek-v3-0324", "deepseek-ai/DeepSeek-V3-0324"),
   deepseekR1: hf("deepseek-r1", "deepseek-ai/DeepSeek-R1"),
+  kimiK26: hfTiktoken("kimi-k26", "moonshotai/Kimi-K2.6"),
+  kimiK2Thinking: hfTiktoken("kimi-k2-thinking", "moonshotai/Kimi-K2-Thinking"),
+  kimiK2Instruct: hfTiktoken("kimi-k2-instruct", "moonshotai/Kimi-K2-Instruct-0905"),
   minimaxM27: hf("minimax-m27", "MiniMaxAI/MiniMax-M2.7"),
+  minimaxM1: hf("minimax-m1", "MiniMaxAI/MiniMax-M1-80k"),
+  minimaxText01: hf("minimax-text-01", "MiniMaxAI/MiniMax-Text-01-hf"),
   mimoV25Pro: hf("mimo-v25-pro", "XiaomiMiMo/MiMo-V2.5-Pro"),
   mimoV25: hf("mimo-v25", "XiaomiMiMo/MiMo-V2.5"),
   glm5: hf("glm5", "zai-org/GLM-5.1"),
   glm45_47: hf("glm45-47", "zai-org/GLM-4.7"),
+  glm4_32b: hf("glm4-32b", "zai-org/GLM-4-32B-0414"),
   llama2: hf("llama2", "NousResearch/Llama-2-7b-chat-hf"),
   llama2_70b: hf("llama2-70b", "TheBloke/Llama-2-70B-Chat-GPTQ"),
   llama3: hf("llama3", "NousResearch/Meta-Llama-3-8B-Instruct"),
@@ -166,6 +194,14 @@ export const MODELS: ModelEntry[] = [
   model("deepseek/deepseek-r1", "DeepSeek R1", "DeepSeek", "deepseek", TOKENIZERS.deepseekR1, 128_000, true, "China", ["reasoning"]),
   model("deepseek/deepseek-r1-0528", "DeepSeek R1 0528", "DeepSeek", "deepseek", TOKENIZERS.deepseekR1, 163_840, true, "China", ["reasoning"]),
 
+  model("moonshotai/kimi-k2.6", "Kimi K2.6", "Moonshot AI", "kimi", TOKENIZERS.kimiK26, 262_144, true, "China", ["reasoning"]),
+  model("moonshotai/kimi-k2.5", "Kimi K2.5", "Moonshot AI", "kimi", TOKENIZERS.kimiK26, 262_144, true, "China"),
+  model("moonshotai/kimi-k2-thinking", "Kimi K2 Thinking", "Moonshot AI", "kimi", TOKENIZERS.kimiK2Thinking, 262_144, true, "China", ["reasoning"]),
+  model("moonshotai/kimi-k2-0905", "Kimi K2 0905", "Moonshot AI", "kimi", TOKENIZERS.kimiK2Instruct, 262_144, true, "China"),
+  model("moonshotai/kimi-k2", "Kimi K2 0711", "Moonshot AI", "kimi", TOKENIZERS.kimiK2Instruct, 131_072, true, "China"),
+
+  model("minimax/minimax-m1", "MiniMax M1", "MiniMax", "minimax", TOKENIZERS.minimaxM1, 1_000_000, true, "China", ["reasoning"]),
+  model("minimax/minimax-01", "MiniMax-01", "MiniMax", "minimax", TOKENIZERS.minimaxText01, 1_000_192, true, "China"),
   model("minimax/minimax-m2.7", "MiniMax M2.7", "MiniMax", "minimax", TOKENIZERS.minimaxM27, 196_608, true, "China"),
   model("minimax/minimax-m2.5", "MiniMax M2.5", "MiniMax", "minimax", TOKENIZERS.minimaxM27, 196_608, true, "China"),
   model("minimax/minimax-m2.1", "MiniMax M2.1", "MiniMax", "minimax", TOKENIZERS.minimaxM27, 196_608, true, "China"),
@@ -182,6 +218,7 @@ export const MODELS: ModelEntry[] = [
   model("z-ai/glm-4.6", "GLM 4.6", "Z.ai", "glm", TOKENIZERS.glm45_47, 204_800, true, "China"),
   model("z-ai/glm-4.5", "GLM 4.5", "Z.ai", "glm", TOKENIZERS.glm45_47, 131_072, true, "China"),
   model("z-ai/glm-4.5-air", "GLM 4.5 Air", "Z.ai", "glm", TOKENIZERS.glm45_47, 131_072, true, "China"),
+  model("z-ai/glm-4-32b", "GLM 4 32B", "Z.ai", "glm", TOKENIZERS.glm4_32b, 128_000, true, "China"),
 
   model("meta/llama-3.1-8b-instruct", "Llama 3.1 8B Instruct", "Meta", "llama", TOKENIZERS.llama3, 131_072, true, "Global"),
   model("meta/llama-2-70b-chat", "Llama 2 70B Chat", "Meta", "llama", TOKENIZERS.llama2_70b, 4_096, true, "Global", ["legacy"]),
