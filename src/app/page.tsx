@@ -126,9 +126,7 @@ export default function Home() {
   const [selectedModelId, setSelectedModelId] = useState(DEFAULT_MODEL.id);
   const [query, setQuery] = useState("");
   const [provider, setProvider] = useState("All");
-  const [rawInput, setRawInput] = useState(
-    "你好，world! 这是 tokenizer_hub 的第一版测试。\n\nCompare this prompt across modern AI models.",
-  );
+  const [rawInput, setRawInput] = useState("Tokens are the in-game currency of this world.");
   const [messages, setMessages] = useState<ChatMessage[]>(seedMessages);
   const [toolsInput, setToolsInput] = useState(seedTools);
   const [activeSegmentIndex, setActiveSegmentIndex] = useState<number | null>(null);
