@@ -48,7 +48,12 @@ export const renderTools = (messages: ChatMessage[], toolsJson: string, family: 
 export const formatNumber = (value: number) => new Intl.NumberFormat("en-US").format(value);
 
 export const compactContext = (value: number) => {
-  if (value >= 1_000_000) return `${value / 1_000_000}M`;
+  if (value >= 1_000_000) {
+    const millions = value / 1_000_000;
+    const rounded = Math.round(millions);
+    if (Math.abs(millions - rounded) < 0.05) return `${rounded}M`;
+    return `${Number(millions.toFixed(1))}M`;
+  }
   if (value >= 1_000) return `${Math.round(value / 1000)}K`;
   return String(value);
 };

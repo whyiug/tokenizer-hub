@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "validate:context-format": "node --no-warnings --experimental-strip-types scripts/validate-context-format.mjs",
     "validate:models": "node scripts/validate-model-catalog.mjs",
     "validate:tokenizer-reuse": "node scripts/validate-tokenizer-reuse.mjs",
     "validate:backend-architecture": "node scripts/validate-backend-architecture.mjs",

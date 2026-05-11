@@ -396,7 +396,7 @@ export default function Home() {
                       <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[#8b8378]">
                         <span>{model.provider}</span>
                         <span>·</span>
-                        <span>{compactContext(model.context)}</span>
+                        <span className="tabular-nums">{compactContext(model.context)}</span>
                       </span>
                     </span>
                     <span
