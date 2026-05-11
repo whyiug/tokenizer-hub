@@ -94,16 +94,32 @@ const emptyTokenErrors: Record<string, string> = {};
 const tokenResultFromBackend = (result: BackendTokenizeResult, text: string, model: ModelEntry): TokenResult => ({
   text,
   tokens: result.tokens,
-  segments: result.segments.map((segment) => ({
-    index: segment.index,
-    token: segment.id,
-    text: segment.text,
-    piece: segment.piece,
-  })),
+  segments: result.segments.map((segment) => {
+    const tokens = segment.ids?.length ? segment.ids : [segment.id];
+    const tokenStart = segment.tokenStart ?? segment.index;
+    const textStart = segment.textStart ?? 0;
+    return {
+      index: segment.index,
+      token: tokens[0],
+      tokens,
+      tokenStart,
+      tokenEnd: segment.tokenEnd ?? tokenStart + tokens.length,
+      textStart,
+      textEnd: segment.textEnd ?? textStart + segment.text.length,
+      text: segment.text,
+      piece: segment.piece,
+      pieces: segment.pieces,
+    };
+  }),
   count: result.count,
   contextUsed: model.context ? Math.min(100, (result.count / model.context) * 100) : 0,
   remaining: Math.max(0, model.context - result.count),
 });
+
+const formatTokenIds = (tokens: number[]) => tokens.map(String).join(", ");
+
+const formatTokenRange = (tokenStart: number, tokenEnd: number) =>
+  tokenEnd - tokenStart > 1 ? `#${tokenStart}-${tokenEnd - 1}` : `#${tokenStart}`;
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>("chat");
@@ -115,7 +131,7 @@ export default function Home() {
   );
   const [messages, setMessages] = useState<ChatMessage[]>(seedMessages);
   const [toolsInput, setToolsInput] = useState(seedTools);
-  const [activeTokenIndex, setActiveTokenIndex] = useState<number | null>(null);
+  const [activeSegmentIndex, setActiveSegmentIndex] = useState<number | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([
     "openai/gpt-5.5",
     "openai/gpt-4.1",
@@ -214,8 +230,20 @@ export default function Home() {
   const tokenResult = tokenResults[selectedModel.id] ?? null;
   const selectedTokenPending = !tokenStateReady || (!tokenResult && !tokenErrors[selectedModel.id]);
   const visibleSegments = tokenResult?.segments.slice(0, 600) ?? [];
-  const visibleTokenIds = tokenResult?.tokens.slice(0, 900) ?? [];
-  const activeToken = activeTokenIndex === null || !tokenResult ? null : (tokenResult.segments[activeTokenIndex] ?? null);
+  const visibleTokenIds = useMemo(() => {
+    if (!tokenResult) return [];
+    return tokenResult.segments.flatMap((segment) =>
+      segment.tokens.map((token, offset) => ({
+        token,
+        tokenIndex: segment.tokenStart + offset,
+        segmentIndex: segment.index,
+      })),
+    ).slice(0, 900);
+  }, [tokenResult]);
+  const activeSegment =
+    activeSegmentIndex === null || !tokenResult
+      ? null
+      : (tokenResult.segments.find((segment) => segment.index === activeSegmentIndex) ?? null);
 
   const compareRows = useMemo(
     () =>
@@ -266,15 +294,15 @@ export default function Home() {
               <span className="absolute bottom-2 left-3.5 size-3.5 rounded-[4px] bg-[#bd8a36]" />
             </div>
             <h1
-              aria-label="tokenizer hub"
+              aria-label="Tokenizer Hub"
               className="flex items-center gap-1.5 rounded-[11px] border border-[#ded5ca] bg-[#fffaf2] px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88)]"
             >
               <span className="font-mono text-[12px] font-semibold leading-none tracking-[0.08em] text-[#2c2924]">
-                tokenizer
+                Tokenizer
               </span>
               <span className="h-3.5 w-px bg-[#d8c5a8]" />
               <span className="rounded-[6px] bg-[#3b3328] px-1.5 py-1 font-mono text-[11px] font-semibold leading-none tracking-[0.08em] text-[#fff7eb]">
-                hub
+                Hub
               </span>
             </h1>
           </div>
@@ -480,13 +508,13 @@ export default function Home() {
                   <span className="text-[#8b8378]">Loading exact tokenizer...</span>
                 ) : visibleSegments.length ? (
                   visibleSegments.map((segment) => {
-                    const active = activeTokenIndex === segment.index;
+                    const active = activeSegmentIndex === segment.index;
                     return (
                       <span
-                        key={`${segment.index}-${segment.token}`}
-                        title={`${segment.token}`}
-                        onMouseEnter={() => setActiveTokenIndex(segment.index)}
-                        onFocus={() => setActiveTokenIndex(segment.index)}
+                        key={`${segment.index}-${segment.tokens.join("-")}`}
+                        title={formatTokenIds(segment.tokens)}
+                        onMouseEnter={() => setActiveSegmentIndex(segment.index)}
+                        onFocus={() => setActiveSegmentIndex(segment.index)}
                         tabIndex={0}
                         className={`${swatches[segment.index % swatches.length]} mx-px cursor-default rounded-[5px] border px-1 py-0.5 text-[#211f1b] shadow-[inset_0_-1px_0_rgba(29,27,24,0.08)] outline-none transition ${
                           active
@@ -509,8 +537,8 @@ export default function Home() {
                   <div className="min-w-0 truncate rounded-full border border-[#e1d9ce] bg-white px-2.5 py-1 font-mono text-[11px] text-[#5f574d]">
                     {selectedTokenPending
                       ? "loading"
-                      : activeToken
-                        ? `${activeToken.token} · #${activeToken.index}`
+                      : activeSegment
+                        ? `${formatTokenIds(activeSegment.tokens)} · ${formatTokenRange(activeSegment.tokenStart, activeSegment.tokenEnd)}`
                         : tokenResult
                           ? `${formatNumber(tokenResult.count)} total`
                           : "unavailable"}
@@ -522,13 +550,13 @@ export default function Home() {
                   ) : !tokenResult ? (
                     <span className="text-[#8b8378]">No exact tokenizer is available for this model.</span>
                   ) : (
-                    visibleTokenIds.map((token, index) => {
-                      const active = activeTokenIndex === index;
+                    visibleTokenIds.map(({ token, tokenIndex, segmentIndex }) => {
+                      const active = activeSegmentIndex === segmentIndex;
                       return (
                         <span
-                          key={`${index}-${token}`}
-                          onMouseEnter={() => setActiveTokenIndex(index)}
-                          onFocus={() => setActiveTokenIndex(index)}
+                          key={`${tokenIndex}-${token}`}
+                          onMouseEnter={() => setActiveSegmentIndex(segmentIndex)}
+                          onFocus={() => setActiveSegmentIndex(segmentIndex)}
                           tabIndex={0}
                           className={`mr-1.5 inline-flex rounded-[6px] border px-1.5 py-0.5 outline-none transition ${
                             active

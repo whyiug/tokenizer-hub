@@ -12,7 +12,9 @@
     "validate:tokenizer-reuse": "node scripts/validate-tokenizer-reuse.mjs",
     "validate:backend-architecture": "node scripts/validate-backend-architecture.mjs",
     "validate:backend-api": "node scripts/validate-backend-api.mjs",
+    "validate:segments": "backend/.venv/bin/python scripts/validate-token-segments.py",
     "validate:exact-ui": "node scripts/validate-exact-tokenizer-ui.mjs",
+    "validate:qwen-ui": "node scripts/validate-qwen-segment-ui.mjs",
     "validate:all-models-ui": "node scripts/validate-all-models-ui.mjs",
     "sync:backend-catalog": "node scripts/sync-backend-catalog.mjs",
     "download:tokenizers": "node scripts/download-tokenizer-assets.mjs"

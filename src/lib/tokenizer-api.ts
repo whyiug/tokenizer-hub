@@ -1,8 +1,14 @@
 export type BackendTokenSegment = {
   index: number;
   id: number;
+  ids?: number[];
   text: string;
+  textStart?: number;
+  textEnd?: number;
+  tokenStart?: number;
+  tokenEnd?: number;
   piece?: string;
+  pieces?: string[];
 };
 
 export type BackendTokenizeResult = {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "tokenizer_hub",
+  title: "Tokenizer Hub",
   description: "A minimal tokenizer workbench for modern AI models.",
 };
 

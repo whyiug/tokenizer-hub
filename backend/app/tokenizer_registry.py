@@ -53,11 +53,7 @@ class TiktokenBackendTokenizer:
 
     def tokenize(self, text: str) -> dict[str, Any]:
         ids = self._encoding.encode(text, allowed_special="all", disallowed_special=())
-        segments = []
-        for index, token_id in enumerate(ids):
-            piece = self._encoding.decode_single_token_bytes(token_id)
-            token_text = piece.decode("utf-8", errors="replace")
-            segments.append({"index": index, "id": token_id, "text": token_text})
+        segments = self._segments_from_ids(text, ids)
 
         return {
             "tokenizerKey": self.key,
@@ -66,6 +62,51 @@ class TiktokenBackendTokenizer:
             "tokens": ids,
             "segments": segments,
         }
+
+    def _segments_from_ids(self, text: str, ids: list[int]) -> list[dict[str, Any]]:
+        segments: list[dict[str, Any]] = []
+        pending_bytes = bytearray()
+        pending_ids: list[int] = []
+        pending_start = 0
+        cursor = 0
+
+        for token_index, token_id in enumerate(ids):
+            if not pending_ids:
+                pending_start = token_index
+            pending_ids.append(token_id)
+            pending_bytes.extend(self._encoding.decode_single_token_bytes(token_id))
+
+            try:
+                token_text = bytes(pending_bytes).decode("utf-8")
+            except UnicodeDecodeError:
+                continue
+
+            if not text.startswith(token_text, cursor):
+                continue
+
+            text_start = cursor
+            cursor += len(token_text)
+            segments.append(_make_segment(len(segments), pending_start, pending_ids, token_text, text_start, cursor))
+            pending_bytes.clear()
+            pending_ids = []
+
+        if pending_ids:
+            try:
+                token_text = bytes(pending_bytes).decode("utf-8")
+            except UnicodeDecodeError:
+                token_text = bytes(pending_bytes).decode("utf-8", errors="replace")
+            segments.append(
+                _make_segment(
+                    len(segments),
+                    pending_start,
+                    pending_ids,
+                    token_text,
+                    cursor,
+                    cursor + len(token_text),
+                ),
+            )
+
+        return segments
 
 
 class HfBackendTokenizer:
@@ -87,7 +128,7 @@ class HfBackendTokenizer:
     def tokenize(self, text: str) -> dict[str, Any]:
         encoded = self._tokenizer.encode(text, add_special_tokens=False)
         ids = encoded.ids
-        segments = self._segments_from_ids(ids, encoded.tokens)
+        segments = self._segments_from_encoded(text, ids, encoded.tokens, encoded.offsets)
 
         return {
             "tokenizerKey": self.key,
@@ -97,37 +138,115 @@ class HfBackendTokenizer:
             "segments": segments,
         }
 
-    def _segments_from_ids(self, ids: list[int], pieces: list[str]) -> list[dict[str, Any]]:
-        segments = []
-        for index, token_id in enumerate(ids):
-            piece = pieces[index] if index < len(pieces) else None
-            token_text = self._decode_single(token_id, piece)
-            segment = {"index": index, "id": token_id, "text": token_text}
-            if piece is not None:
-                segment["piece"] = piece
-            segments.append(segment)
+    def _segments_from_encoded(
+        self,
+        text: str,
+        ids: list[int],
+        pieces: list[str],
+        offsets: list[tuple[int, int]],
+    ) -> list[dict[str, Any]]:
+        segments: list[dict[str, Any]] = []
+        pending_ids: list[int] = []
+        pending_pieces: list[str] = []
+        pending_start = 0
+        text_start: int | None = None
+        text_end: int | None = None
+
+        for token_index, token_id in enumerate(ids):
+            if not pending_ids:
+                pending_start = token_index
+                text_start = None
+                text_end = None
+
+            pending_ids.append(token_id)
+            if token_index < len(pieces):
+                pending_pieces.append(pieces[token_index])
+
+            if token_index < len(offsets):
+                start, end = offsets[token_index]
+                text_start = start if text_start is None else min(text_start, start)
+                text_end = end if text_end is None else max(text_end, end)
+
+            target_text = text[text_start:text_end] if text_start is not None and text_end is not None else ""
+            decoded = self._decode_ids(pending_ids)
+            if target_text and decoded == target_text:
+                segments.append(
+                    _make_segment(
+                        len(segments),
+                        pending_start,
+                        pending_ids,
+                        target_text,
+                        text_start,
+                        text_end,
+                        pending_pieces,
+                    ),
+                )
+                pending_ids = []
+                pending_pieces = []
+
+        if pending_ids:
+            if text_start is not None and text_end is not None:
+                token_text = text[text_start:text_end]
+            else:
+                token_text = self._decode_ids(pending_ids)
+                text_start = 0
+                text_end = len(token_text)
+            segments.append(
+                _make_segment(
+                    len(segments),
+                    pending_start,
+                    pending_ids,
+                    token_text,
+                    text_start,
+                    text_end,
+                    pending_pieces,
+                ),
+            )
+
         return segments
 
-    def _decode_single(self, token_id: int, piece: str | None) -> str:
+    def _decode_ids(self, token_ids: list[int]) -> str:
         try:
             decoded = self._tokenizer.decode(
-                [token_id],
+                token_ids,
                 skip_special_tokens=False,
                 clean_up_tokenization_spaces=False,
             )
-            if decoded and "\ufffd" not in decoded:
-                return decoded
+            return decoded
         except TypeError:
             try:
-                decoded = self._tokenizer.decode([token_id], skip_special_tokens=False)
-                if decoded and "\ufffd" not in decoded:
-                    return decoded
+                return self._tokenizer.decode(token_ids, skip_special_tokens=False)
             except Exception:
                 pass
         except Exception:
             pass
 
-        return piece if piece is not None else str(token_id)
+        return ""
+
+
+def _make_segment(
+    index: int,
+    token_start: int,
+    token_ids: list[int],
+    text: str,
+    text_start: int,
+    text_end: int,
+    pieces: list[str] | None = None,
+) -> dict[str, Any]:
+    segment: dict[str, Any] = {
+        "index": index,
+        "id": token_ids[0],
+        "ids": list(token_ids),
+        "text": text,
+        "textStart": text_start,
+        "textEnd": text_end,
+        "tokenStart": token_start,
+        "tokenEnd": token_start + len(token_ids),
+    }
+    if pieces:
+        segment["piece"] = "".join(pieces)
+        segment["pieces"] = list(pieces)
+    return segment
 
 
 class TokenizerRegistry:

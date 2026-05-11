@@ -11,8 +11,14 @@ export type ChatMessage = {
 export type TokenSegment = {
   text: string;
   token: number;
+  tokens: number[];
   index: number;
+  textStart: number;
+  textEnd: number;
+  tokenStart: number;
+  tokenEnd: number;
   piece?: string;
+  pieces?: string[];
 };
 
 export type TokenResult = {
