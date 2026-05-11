@@ -79,12 +79,17 @@ for (const item of forbidden) {
 }
 
 for (const asset of hfAssets) {
-  for (const filename of ["tokenizer.json", "tokenizer_config.json"]) {
+  for (const filename of ["tokenizer.json.gz", "tokenizer_config.json"]) {
     const assetPath = path.join("backend", "tokenizers", asset, filename);
     if (!fs.existsSync(assetPath)) {
       console.error(`Missing tokenizer asset: ${assetPath}`);
       process.exitCode = 1;
     }
+  }
+  const rawTokenizerPath = path.join("backend", "tokenizers", asset, "tokenizer.json");
+  if (fs.existsSync(rawTokenizerPath)) {
+    console.error(`Uncompressed tokenizer asset should not be committed: ${rawTokenizerPath}`);
+    process.exitCode = 1;
   }
 }
 

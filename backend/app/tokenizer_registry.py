@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import gzip
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
@@ -70,7 +72,7 @@ class HfBackendTokenizer:
             raise TokenizerError(f"Missing HF tokenizer asset for {spec.key}")
 
         asset_dir = tokenizer_root / spec.asset
-        tokenizer_file = asset_dir / "tokenizer.json"
+        tokenizer_file = self._resolve_tokenizer_file(asset_dir, spec.asset)
         if not tokenizer_file.exists():
             raise TokenizerError(f"Missing tokenizer file for {spec.key}: {tokenizer_file}")
 
@@ -177,6 +179,27 @@ class HfBackendTokenizer:
             pass
 
         return ""
+
+    def _resolve_tokenizer_file(self, asset_dir: Path, asset: str) -> Path:
+        tokenizer_file = asset_dir / "tokenizer.json"
+        if tokenizer_file.exists():
+            return tokenizer_file
+
+        compressed_file = asset_dir / "tokenizer.json.gz"
+        if not compressed_file.exists():
+            return tokenizer_file
+
+        cache_dir = Path(os.environ.get("TOKENIZER_HUB_CACHE_DIR", "/tmp/tokenizer_hub_tokenizers")) / asset
+        cache_file = cache_dir / "tokenizer.json"
+        if cache_file.exists() and cache_file.stat().st_mtime >= compressed_file.stat().st_mtime:
+            return cache_file
+
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        temp_file = cache_file.with_suffix(".json.tmp")
+        with gzip.open(compressed_file, "rb") as source, temp_file.open("wb") as target:
+            shutil.copyfileobj(source, target)
+        temp_file.replace(cache_file)
+        return cache_file
 
 
 class HfTiktokenBackendTokenizer:
@@ -429,7 +452,7 @@ class TokenizerRegistry:
         for asset_dir in sorted(self.tokenizer_root.iterdir()):
             if not asset_dir.is_dir():
                 continue
-            if (asset_dir / "tokenizer.json").exists():
+            if (asset_dir / "tokenizer.json").exists() or (asset_dir / "tokenizer.json.gz").exists():
                 key = f"hf:{asset_dir.name}"
                 self._specs.setdefault(
                     key,

@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { createGzip } from "node:zlib";
+import { createReadStream, createWriteStream } from "node:fs";
 import { tokenizerAssets } from "./tokenizer-assets.mjs";
 
 const force = process.argv.includes("--force");
@@ -23,6 +25,16 @@ const formatRate = (bytes, ms) => {
   if (!ms) return "n/a";
   return `${(bytes / 1024 / 1024 / (ms / 1000)).toFixed(2)} MiB/s`;
 };
+
+const gzipFile = (sourcePath, targetPath) =>
+  new Promise((resolve, reject) => {
+    const source = createReadStream(sourcePath);
+    const target = createWriteStream(targetPath);
+    source.on("error", reject);
+    target.on("error", reject);
+    target.on("close", resolve);
+    source.pipe(createGzip({ level: 9 })).pipe(target);
+  });
 
 const curl = (url, targetPath) =>
   new Promise((resolve, reject) => {
@@ -59,8 +71,9 @@ const curl = (url, targetPath) =>
 
 const download = async (asset, filename) => {
   const targetDir = path.join("backend", "tokenizers", asset.key);
-  const targetPath = path.join(targetDir, filename);
-  const tmpPath = `${targetPath}.tmp`;
+  const storedFilename = filename === "tokenizer.json" ? "tokenizer.json.gz" : filename;
+  const targetPath = path.join(targetDir, storedFilename);
+  const tmpPath = path.join(targetDir, `${filename}.tmp`);
   await fs.mkdir(targetDir, { recursive: true });
 
   if (!force) {
@@ -76,7 +89,12 @@ const download = async (asset, filename) => {
 
   const url = `${endpoint}/${asset.repo}/resolve/main/${filename}`;
   const { elapsedMs } = await curl(url, tmpPath);
-  await fs.rename(tmpPath, targetPath);
+  if (filename === "tokenizer.json") {
+    await gzipFile(tmpPath, targetPath);
+    await fs.rm(tmpPath, { force: true });
+  } else {
+    await fs.rename(tmpPath, targetPath);
+  }
   const stats = await fs.stat(targetPath);
   console.log(
     `wrote ${targetPath} (${stats.size.toLocaleString()} bytes in ${formatDuration(elapsedMs)}, ${formatRate(stats.size, elapsedMs)})`,
