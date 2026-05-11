@@ -39,7 +39,7 @@ const seedMessages: ChatMessage[] = [
   {
     id: "user",
     role: "user",
-    content: "",
+    content: "Tokens are the in-game currency of this world.",
   },
 ];
 
