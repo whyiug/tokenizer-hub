@@ -31,3 +31,17 @@ select {
   background: #eadfcf;
   color: #1d1b18;
 }
+
+.token-lun-page {
+  scrollbar-color: #c9aa78 #f4ead9;
+}
+
+.token-lun-card {
+  text-indent: 2em;
+}
+
+.token-lun-card::first-letter {
+  color: #9d3f2d;
+  font-size: 1.56em;
+  font-weight: 600;
+}
