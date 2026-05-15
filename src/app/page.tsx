@@ -616,20 +616,33 @@ export default function Home() {
           </section>
         </section>
       </div>
-      <a
-        href="https://github.com/whyiug/tokenizer-hub"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Open Tokenizer Hub on GitHub"
-        className="fixed bottom-4 right-4 z-30 flex size-8 items-center justify-center rounded-[8px] border border-[#ded5ca] bg-[#fffefa]/90 text-[#6f675c] shadow-[0_4px_18px_rgba(63,48,31,0.08)] backdrop-blur transition hover:border-[#c9aa78] hover:bg-white hover:text-[#1d1b18]"
-      >
-        <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
-          <path
-            fill="currentColor"
-            d="M8 0C3.58 0 0 3.67 0 8.2c0 3.62 2.29 6.69 5.47 7.77.4.08.55-.18.55-.4 0-.2-.01-.86-.01-1.56-2.01.38-2.53-.5-2.69-.96-.09-.24-.48-.96-.82-1.15-.28-.16-.68-.55-.01-.56.63-.01 1.08.59 1.23.84.72 1.24 1.87.89 2.33.68.07-.53.28-.89.51-1.09-1.78-.21-3.64-.91-3.64-4.04 0-.89.31-1.62.82-2.19-.08-.21-.36-1.04.08-2.16 0 0 .67-.22 2.2.84A7.4 7.4 0 0 1 8 3.94c.68 0 1.36.09 2 .28 1.52-1.06 2.19-.84 2.19-.84.44 1.12.16 1.95.08 2.16.51.57.82 1.3.82 2.19 0 3.14-1.87 3.83-3.65 4.04.29.26.54.75.54 1.52 0 1.09-.01 1.97-.01 2.24 0 .22.15.48.55.4A8.1 8.1 0 0 0 16 8.2C16 3.67 12.42 0 8 0Z"
-          />
-        </svg>
-      </a>
+      <div className="fixed bottom-4 right-4 z-30 flex items-end gap-2">
+        <a
+          href="https://github.com/whyiug/tokenizer-hub"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Open Tokenizer Hub on GitHub"
+          className="flex size-8 items-center justify-center rounded-[8px] border border-[#ded5ca] bg-[#fffefa]/90 text-[#6f675c] shadow-[0_4px_18px_rgba(63,48,31,0.08)] backdrop-blur transition hover:border-[#c9aa78] hover:bg-white hover:text-[#1d1b18]"
+        >
+          <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+            <path
+              fill="currentColor"
+              d="M8 0C3.58 0 0 3.67 0 8.2c0 3.62 2.29 6.69 5.47 7.77.4.08.55-.18.55-.4 0-.2-.01-.86-.01-1.56-2.01.38-2.53-.5-2.69-.96-.09-.24-.48-.96-.82-1.15-.28-.16-.68-.55-.01-.56.63-.01 1.08.59 1.23.84.72 1.24 1.87.89 2.33.68.07-.53.28-.89.51-1.09-1.78-.21-3.64-.91-3.64-4.04 0-.89.31-1.62.82-2.19-.08-.21-.36-1.04.08-2.16 0 0 .67-.22 2.2.84A7.4 7.4 0 0 1 8 3.94c.68 0 1.36.09 2 .28 1.52-1.06 2.19-.84 2.19-.84.44 1.12.16 1.95.08 2.16.51.57.82 1.3.82 2.19 0 3.14-1.87 3.83-3.65 4.04.29.26.54.75.54 1.52 0 1.09-.01 1.97-.01 2.24 0 .22.15.48.55.4A8.1 8.1 0 0 0 16 8.2C16 3.67 12.42 0 8 0Z"
+            />
+          </svg>
+        </a>
+        <a
+          href="/token-lun"
+          aria-label="Open Token Lun"
+          className="group relative flex h-12 w-11 overflow-hidden rounded-[10px] border border-[#d8c4a3] bg-[#fff8e9] shadow-[0_8px_28px_rgba(63,48,31,0.14)] transition hover:-translate-y-0.5 hover:border-[#b94c36] hover:shadow-[0_12px_34px_rgba(96,55,23,0.18)]"
+        >
+          <span className="absolute inset-0 bg-[radial-gradient(circle_at_25%_18%,rgba(185,76,54,0.12),transparent_36%),linear-gradient(90deg,rgba(116,88,54,0.10)_1px,transparent_1px),linear-gradient(rgba(116,88,54,0.08)_1px,transparent_1px)] bg-[size:auto,12px_12px,12px_12px]" />
+          <span className="relative m-1.5 flex flex-1 items-center justify-center rounded-[5px] border border-[#b94c36]/70 bg-[#fffaf0]/86 font-serif text-[15px] font-semibold leading-none text-[#a94432]">
+            论
+          </span>
+          <span className="absolute bottom-1 left-1/2 h-px w-5 -translate-x-1/2 bg-[#b94c36]/36 transition group-hover:w-7" />
+        </a>
+      </div>
     </main>
   );
 }
