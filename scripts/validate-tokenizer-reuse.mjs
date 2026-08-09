@@ -7,6 +7,7 @@ import { tokenizerAssets } from "./tokenizer-assets.mjs";
 
 const endpoint = (process.env.HF_ENDPOINT || "https://huggingface.co").replace(/\/$/, "");
 const manifest = JSON.parse(fs.readFileSync("backend/tokenizers/manifest.json", "utf8"));
+const evidence = JSON.parse(fs.readFileSync("data/model-evidence.json", "utf8"));
 const digest = (contents) => createHash("sha256").update(contents).digest("hex");
 const sha256Pattern = /^[a-f0-9]{64}$/;
 const revisionPattern = /^[a-f0-9]{40}$/;
@@ -101,6 +102,27 @@ const metadataFor = async (repo, revision) => {
   }
   return metadataCache.get(key);
 };
+
+for (const [modelId, record] of Object.entries(evidence.models ?? {})) {
+  const identity = record.tokenizer?.officialIdentity;
+  if (!identity) continue;
+  try {
+    const metadata = await metadataFor(identity.repo, identity.revision);
+    const remoteFile = metadata.siblings?.find((item) => item.rfilename === identity.path);
+    const actualGitBlobSha1 = remoteFile?.blobId;
+    if (actualGitBlobSha1 !== identity.gitBlobSha1) {
+      console.error(
+        `${modelId}: official tokenizer blob identity mismatch: expected ${identity.gitBlobSha1}, got ${actualGitBlobSha1}.`,
+      );
+      process.exitCode = 1;
+    } else {
+      console.log(`${modelId}: official gated tokenizer identity matches the documented public mirror.`);
+    }
+  } catch (error) {
+    console.error(`${modelId}: failed to verify official tokenizer identity: ${error instanceof Error ? error.message : error}`);
+    process.exitCode = 1;
+  }
+}
 
 const remoteFileSha256 = async (repo, revision, filename) => {
   const metadata = await metadataFor(repo, revision);

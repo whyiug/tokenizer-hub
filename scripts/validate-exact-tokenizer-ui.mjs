@@ -2,7 +2,7 @@ import { chromium } from "@playwright/test";
 
 const targetUrl = process.argv[2] ?? "http://localhost:3001";
 const sample = "五道口纳什";
-const expectedIds = ["76208", "45893", "40526"];
+const expectedIds = ["7566", "7615", "12630", "49318", "9915"];
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
@@ -29,7 +29,7 @@ try {
   const hasExpectedIds = expectedIds.every((id) => bodyText.includes(id));
 
   if (hasEstimatedIds || !hasExpectedIds) {
-    throw new Error(`Expected exact cl100k ids for ${sample}, got estimated output. Body excerpt: ${bodyText.slice(-800)}`);
+    throw new Error(`Expected exact o200k ids for ${sample}, got unavailable or estimated output. Body excerpt: ${bodyText.slice(-800)}`);
   }
 
   console.log(`Exact tokenizer UI ok for ${sample}`);

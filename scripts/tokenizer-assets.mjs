@@ -62,6 +62,14 @@ export const tokenizerAssets = [
     reuseRepos: [],
   },
   {
+    key: "deepseek-v4-flash-0731",
+    repo: "deepseek-ai/DeepSeek-V4-Flash-0731",
+    revision: "7872f01b1d1fe23eabc4c98b48bffcef5a386062",
+    tokenizerJsonSize: 6367146,
+    tokenizerConfigSize: 801,
+    reuseRepos: [],
+  },
+  {
     key: "deepseek-r1",
     repo: "deepseek-ai/DeepSeek-R1",
     revision: "56d4cbbb4d29f4355bab4b9a39ccb717a14ad5ad",
@@ -78,6 +86,14 @@ export const tokenizerAssets = [
       { repo: "MiniMaxAI/MiniMax-M2", revision: "757303d492a50514c312788b5247a4f696a4c6a3" },
       { repo: "MiniMaxAI/MiniMax-M2.1", revision: "cd97f59135f37b2a6bf09356e485d5e4aeb7dc9c" },
     ],
+  },
+  {
+    key: "minimax-m3",
+    repo: "MiniMaxAI/MiniMax-M3",
+    revision: "f0e1c1e04d40177e4673a22097036854f536e9c0",
+    tokenizerJsonSize: 9731500,
+    tokenizerConfigSize: 11288,
+    reuseRepos: [],
   },
   {
     key: "minimax-m1",
@@ -118,6 +134,7 @@ export const tokenizerAssets = [
     tokenizerJsonSize: 20217442,
     reuseRepos: [
       { repo: "zai-org/GLM-5", revision: "4e6698ba8e85059d749020e3c4d2123719f23926" },
+      { repo: "zai-org/GLM-5.2", revision: "b4734de4facf877f85769a911abafc5283eab3d9" },
       { repo: "zai-org/GLM-4.7-Flash", revision: "7dd20894a642a0aa287e9827cb1a1f7f91386b67" },
     ],
   },
@@ -147,6 +164,24 @@ export const tokenizerAssets = [
     tiktokenModelSize: 2795286,
     tokenizerConfigSize: 4862,
     reuseRepos: [{ repo: "moonshotai/Kimi-K2.5", revision: "4d01dfe0332d63057c186e0b262165819efb6611" }],
+  },
+  {
+    key: "kimi-k3",
+    type: "hf_tiktoken",
+    repo: "moonshotai/Kimi-K3",
+    revision: "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+    tiktokenModelSize: 2795286,
+    tokenizerConfigSize: 3478,
+    reuseRepos: [],
+  },
+  {
+    key: "kimi-k27-code",
+    type: "hf_tiktoken",
+    repo: "moonshotai/Kimi-K2.7-Code",
+    revision: "74797c9c62378b951a1f6fcf5c4631024e9b8bef",
+    tiktokenModelSize: 2795286,
+    tokenizerConfigSize: 4832,
+    reuseRepos: [],
   },
   {
     key: "kimi-k2-thinking",
@@ -186,5 +221,38 @@ export const tokenizerAssets = [
     revision: "53346005fb0ef11d3b6a83b12c895cca40156b6c",
     tokenizerJsonSize: 9085698,
     reuseRepos: [],
+  },
+  {
+    key: "gemma4",
+    repo: "google/gemma-4-E2B-it",
+    revision: "3e22461f65e89153144f8adb70e3b8c2cc9845a7",
+    tokenizerJsonSize: 32169626,
+    tokenizerConfigSize: 3082,
+    reuseRepos: [
+      { repo: "google/gemma-4-E4B-it", revision: "ee0ef6023621cff504d758262d4e04895a5af4a2" },
+      { repo: "google/gemma-4-12B-it", revision: "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7" },
+      { repo: "google/gemma-4-26B-A4B-it", revision: "4d7ae4984b7db7de8f8457170b3f1a419ee76d52" },
+      { repo: "google/gemma-4-31B-it", revision: "842da3794eaa0b77d5f08bae87a17459d91ff475" },
+    ],
+  },
+  {
+    key: "llama4",
+    repo: "unsloth/Llama-4-Scout-17B-16E-Instruct",
+    revision: "afd8e498c87bda51c7ea8ec68ea2f7c066e6340b",
+    tokenizerJsonSize: 27948578,
+    tokenizerConfigSize: 239629,
+    reuseRepos: [
+      { repo: "unsloth/Llama-4-Maverick-17B-128E-Instruct", revision: "86c5ecb6f2fbddf604c60120125fb202e09f2556" },
+    ],
+  },
+  {
+    key: "mistral4",
+    repo: "mistralai/Mistral-Small-4-119B-2603",
+    revision: "a11f36bebf709121056b1dbcc943d1c6afbe494d",
+    tokenizerJsonSize: 17077420,
+    tokenizerConfigSize: 21140,
+    reuseRepos: [
+      { repo: "mistralai/Mistral-Medium-3.5-128B", revision: "22b2b868a15677cfa6061277ed2f653d1349a9ab" },
+    ],
   },
 ];

@@ -18,10 +18,9 @@ try {
   await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
   await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
 
-  await page.getByRole("button", { name: "Chat", exact: true }).click();
-  const textareas = await page.locator("textarea").evaluateAll((nodes) => nodes.map((node) => node.value));
-  if (!textareas.includes(expectedText)) {
-    throw new Error(`Chat default text not found. Values: ${JSON.stringify(textareas)}`);
+  const rawInput = await page.getByTestId("raw-input").inputValue();
+  if (rawInput !== expectedText) {
+    throw new Error(`Raw default text not found. Got: ${JSON.stringify(rawInput)}`);
   }
 
   const tokenCount = await page.getByTestId("token-count").textContent();
@@ -29,10 +28,10 @@ try {
   if (bodyText.includes("Loading exact tokenizer")) {
     throw new Error("Initial UI showed tokenizer loading even though the default state should be preseeded.");
   }
-  if (tokenCount?.trim() !== "50") {
-    throw new Error(`Expected preseeded token count "50", got ${JSON.stringify(tokenCount?.trim())}.`);
+  if (tokenCount?.trim() !== "10") {
+    throw new Error(`Expected preseeded token count "10", got ${JSON.stringify(tokenCount?.trim())}.`);
   }
-  if (!bodyText.includes("30400") || !bodyText.includes("Tokens")) {
+  if (!bodyText.includes("30325") || !bodyText.includes("Tokens")) {
     throw new Error("Initial UI did not render preseeded token segments and ids.");
   }
   console.log(`Initial token state UI is preseeded.${interceptedTokenize ? " Background request was delayed." : ""}`);

@@ -259,7 +259,7 @@ Commit: `git commit -m "feat: render exact chat and tool prompts"`
 - Modify: `scripts/validate-model-catalog.mjs`
 - Regenerate: `backend/catalog.json`
 
-- [ ] Add required-ID assertions for all 17 entries before editing the catalog.
+- [x] Add required-ID assertions for all 17 entries before editing the catalog.
 
 Required additions:
 
@@ -287,29 +287,29 @@ Run: `pnpm validate:models`
 
 Expected: failure listing all missing additions and the 71-versus-88 count.
 
-- [ ] Pin official source commits and add evidence before downloading each asset.
+- [x] Pin official source commits and add evidence before downloading each asset.
 
 Use canonical instruction/API-facing IDs only. Record official context sources. Do not substitute community mirrors for gated repositories without documenting the official-to-mirror byte identity.
 
-- [ ] Download tokenizer/config/template artifacts, verify hashes, then compress eligible `tokenizer.json` files.
+- [x] Download tokenizer/config/template artifacts, verify hashes, then compress eligible `tokenizer.json` files.
 
 Run: `pnpm download:tokenizers`
 
 Expected: every new file matches its manifest hash before it enters the catalog.
 
-- [ ] Determine tokenizer reuse exclusively by SHA-256 and map shared assets to one `tokenizerKey`.
+- [x] Determine tokenizer reuse exclusively by SHA-256 and map shared assets to one `tokenizerKey`.
 
 In particular, verify rather than assume reuse for GLM 5.2/5.1, Kimi K2.7/K2.x, the Gemma 4 sizes, Llama 4 variants, and the Mistral variants.
 
-- [ ] Extend the registry only for artifact formats not already handled by `tiktoken`, `tokenizer.json`, or local HF-tiktoken BPE.
+- [x] Extend the registry only for artifact formats not already handled by `tiktoken`, `tokenizer.json`, or local HF-tiktoken BPE.
 
 Dedicated Kimi K3 or DeepSeek V4 logic must be local, deterministic, and fixture-covered.
 
-- [ ] Add the 17 models, classify superseded entries as preview/legacy, and change the default to a current active model.
+- [x] Add the 17 models, classify superseded entries as preview/legacy, and change the default to a current active model.
 
 Keep prior entries rather than rewriting history. Sort active models ahead of preview and legacy in exported selectors.
 
-- [ ] Regenerate the backend catalog and run model/tokenizer validations.
+- [x] Regenerate the backend catalog and run model/tokenizer validations.
 
 Run:
 
@@ -339,27 +339,27 @@ Commit: `git commit -m "feat: add v0.2 model snapshot"`
 - Create: `scripts/validate-mode-support-ui.mjs`
 - Modify: `package.json`
 
-- [ ] Add failing source and Playwright checks proving the browser no longer serializes Chat/Tools.
+- [x] Add failing source and Playwright checks proving the browser no longer serializes Chat/Tools.
 
 Reject imports or calls to `renderChat` and `renderTools` from the page. Assert that the request body carries ordered messages/tools and that the displayed serialized prompt matches the backend response.
 
-- [ ] Delete the universal ChatML-like renderer from `src/lib/tokenizer.ts` after its callers are removed.
+- [x] Delete the universal ChatML-like renderer from `src/lib/tokenizer.ts` after its callers are removed.
 
 Keep only presentation helpers for backend-returned token segments.
 
-- [ ] Drive controls and badges from `model.support[activeMode]`.
+- [x] Drive controls and badges from `model.support[activeMode]`.
 
 Use `Exact` only for supported active modes and `Unavailable` otherwise. Unsupported controls remain visible but disabled with a short explanation.
 
-- [ ] Fix selection, lifecycle, and Compare behavior.
+- [x] Fix selection, lifecycle, and Compare behavior.
 
 Replace stale `openai/gpt-5.5` defaults with existing active IDs. Compare sends only models supporting the active input mode, preserves unavailable results returned by the server, and never falls back to a different tokenizer or mode.
 
-- [ ] Preserve structured state across mode changes without stale results.
+- [x] Preserve structured state across mode changes without stale results.
 
 Changing model, mode, messages, or tools aborts the previous request, clears incompatible output, and renders only a response matching the latest request generation.
 
-- [ ] Add `validate:mode-ui` and run UI tests against local frontend/backend servers.
+- [x] Add `validate:mode-ui` and run UI tests against local frontend/backend servers.
 
 Run:
 
@@ -387,17 +387,17 @@ Commit: `git commit -m "feat: expose mode-specific exact support"`
 - Modify: `docs/backend-design.md`
 - Create: `docs/releases/v0.2.0.md`
 
-- [ ] Bump the package version from `0.1.0` to `0.2.0` without unrelated dependency upgrades.
+- [x] Bump the package version from `0.1.0` to `0.2.0` without unrelated dependency upgrades.
 
-- [ ] Update both READMEs with the 88-model, `2026-08-09` snapshot and precise Raw/Chat/Tools semantics.
+- [x] Update both READMEs with the 88-model, `2026-08-09` snapshot and precise Raw/Chat/Tools semantics.
 
 Remove provider/model coverage claims that are not represented in the catalog. State clearly that unsupported modes cannot obtain local token IDs and that remote provider tokenization is intentionally out of scope.
 
-- [ ] Rewrite backend design sections for structured requests, renderer registry, evidence, SHA-256 identity, startup health, and deployment size considerations.
+- [x] Rewrite backend design sections for structured requests, renderer registry, evidence, SHA-256 identity, startup health, and deployment size considerations.
 
-- [ ] Add release notes listing additions, lifecycle changes, breaking API payload changes, migrations, deferred v0.2.1 candidates, and exclusions.
+- [x] Add release notes listing additions, lifecycle changes, breaking API payload changes, migrations, deferred v0.2.1 candidates, and exclusions.
 
-- [ ] Run documentation consistency checks.
+- [x] Run documentation consistency checks.
 
 Run: `rg '0\.1\.0|2026-05-(10|11)|61 models|71 models|gpt-5\.5' README.md README.zh-CN.md docs package.json src backend scripts`
 

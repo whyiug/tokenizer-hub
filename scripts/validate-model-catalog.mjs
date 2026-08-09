@@ -37,6 +37,23 @@ const requiredIds = [
   "minimax/minimax-m1",
   "minimax/minimax-01",
   "z-ai/glm-4-32b",
+  "openai/gpt-5.6-sol",
+  "openai/gpt-5.6-terra",
+  "openai/gpt-5.6-luna",
+  "deepseek/deepseek-v4-flash-0731",
+  "z-ai/glm-5.2",
+  "moonshotai/kimi-k3",
+  "moonshotai/kimi-k2.7-code",
+  "minimax/minimax-m3",
+  "google/gemma-4-e2b-it",
+  "google/gemma-4-e4b-it",
+  "google/gemma-4-12b-it",
+  "google/gemma-4-26b-a4b-it",
+  "google/gemma-4-31b-it",
+  "meta/llama-4-scout-17b-16e-instruct",
+  "meta/llama-4-maverick-17b-128e-instruct",
+  "mistralai/mistral-small-4-119b-2603",
+  "mistralai/mistral-medium-3.5-128b",
 ];
 
 const errors = [];
@@ -71,7 +88,12 @@ for (const model of MODELS) {
   ) {
     errors.push(`${model.id}: invalid or missing mode support.`);
   } else {
-    if (!model.support.raw) errors.push(`${model.id}: v0.2 catalog entries must have exact Raw support.`);
+    if (!model.support.raw && model.lifecycle === "active") {
+      errors.push(`${model.id}: active v0.2 catalog entries must have exact Raw support.`);
+    }
+    if (!model.support.raw && (model.support.chat || model.support.tools)) {
+      errors.push(`${model.id}: Chat/Tools support cannot exist without Raw support.`);
+    }
     if ((model.support.chat || model.support.tools) && !model.rendererKey) {
       errors.push(`${model.id}: exact Chat/Tools support requires rendererKey.`);
     }
@@ -113,5 +135,6 @@ if (errors.length) {
   const sharedTokenizers = new Set(
     MODELS.filter((model) => model.tokenizer.type !== "tiktoken").map((model) => model.tokenizer.key),
   );
-  console.log(`Model catalog ok: ${MODELS.length} exact models, ${sharedTokenizers.size} shared HF tokenizers.`);
+  const exactModels = MODELS.filter((model) => model.support.raw).length;
+  console.log(`Model catalog ok: ${MODELS.length} entries, ${exactModels} exact Raw models, ${sharedTokenizers.size} shared HF tokenizers.`);
 }

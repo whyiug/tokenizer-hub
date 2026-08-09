@@ -1,7 +1,5 @@
 "use client";
 
-import type { TokenizerFamily } from "@/data/models";
-
 export type ChatMessage = {
   id: string;
   role: "system" | "user" | "assistant" | "tool";
@@ -28,21 +26,6 @@ export type TokenResult = {
   count: number;
   contextUsed: number;
   remaining: number;
-};
-
-export const renderChat = (messages: ChatMessage[], family: TokenizerFamily) => {
-  void family;
-
-  return `${messages
-    .map((message) => `<|im_start|>${message.role}\n${message.content.trim()}<|im_end|>`)
-    .join("\n")}\n<|im_start|>assistant\n`;
-};
-
-export const renderTools = (messages: ChatMessage[], toolsJson: string, family: TokenizerFamily) => {
-  const chat = renderChat(messages, family);
-  const cleanedTools = toolsJson.trim();
-  if (!cleanedTools) return chat;
-  return `${chat}\n<tool_call>\n${cleanedTools}\n</tool_call>`;
 };
 
 export const formatNumber = (value: number) => new Intl.NumberFormat("en-US").format(value);

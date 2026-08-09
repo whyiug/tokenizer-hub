@@ -156,6 +156,28 @@
         }
       ]
     },
+    "deepseek-v4-flash-0731": {
+      "repo": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "revision": "7872f01b1d1fe23eabc4c98b48bffcef5a386062",
+      "files": [
+        {
+          "path": "deepseek-v4-flash-0731/tokenizer.json.gz",
+          "sourcePath": "tokenizer.json",
+          "size": 1866004,
+          "sha256": "a1307c8ff9a9284d10f69fc3a84bacb88c06840a58983ac90682a9fcd03057af",
+          "sourceSize": 6367146,
+          "sourceSha256": "8f9f37ca37fdc4f5fd36d5cf4d3b0e8392edb4e894fd10cc0d70b4957c8633cf"
+        },
+        {
+          "path": "deepseek-v4-flash-0731/tokenizer_config.json",
+          "sourcePath": "tokenizer_config.json",
+          "size": 801,
+          "sha256": "6ac8c8dc065ed118161d02dd532749ae3f52c243deac27872134fae2f50d8547",
+          "sourceSize": 801,
+          "sourceSha256": "6ac8c8dc065ed118161d02dd532749ae3f52c243deac27872134fae2f50d8547"
+        }
+      ]
+    },
     "deepseek-r1": {
       "repo": "deepseek-ai/DeepSeek-R1",
       "revision": "56d4cbbb4d29f4355bab4b9a39ccb717a14ad5ad",
@@ -197,6 +219,28 @@
           "sha256": "60e392fea8d47660584deb3c6a716aab7b9f11fed24bc494baf5eb7ba809e882",
           "sourceSize": 10893,
           "sourceSha256": "60e392fea8d47660584deb3c6a716aab7b9f11fed24bc494baf5eb7ba809e882"
+        }
+      ]
+    },
+    "minimax-m3": {
+      "repo": "MiniMaxAI/MiniMax-M3",
+      "revision": "f0e1c1e04d40177e4673a22097036854f536e9c0",
+      "files": [
+        {
+          "path": "minimax-m3/tokenizer.json.gz",
+          "sourcePath": "tokenizer.json",
+          "size": 2980580,
+          "sha256": "013f8fd705d07925aba0be5d6638beb29b3f7e5148ff9952ff508d311851ff9e",
+          "sourceSize": 9731500,
+          "sourceSha256": "bb1f1626cf01448f1e3b6036d0a061ffc66c91d9046aada14ea23a5441b5ad6e"
+        },
+        {
+          "path": "minimax-m3/tokenizer_config.json",
+          "sourcePath": "tokenizer_config.json",
+          "size": 11288,
+          "sha256": "15caca9f74fbce9b86dc014e9324cbefa56703d81ccd6d56020faa1c41d2eae5",
+          "sourceSize": 11288,
+          "sourceSha256": "15caca9f74fbce9b86dc014e9324cbefa56703d81ccd6d56020faa1c41d2eae5"
         }
       ]
     },
@@ -376,6 +420,50 @@
         }
       ]
     },
+    "kimi-k3": {
+      "repo": "moonshotai/Kimi-K3",
+      "revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+      "files": [
+        {
+          "path": "kimi-k3/tiktoken.model",
+          "sourcePath": "tiktoken.model",
+          "size": 2795286,
+          "sha256": "b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103",
+          "sourceSize": 2795286,
+          "sourceSha256": "b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103"
+        },
+        {
+          "path": "kimi-k3/tokenizer_config.json",
+          "sourcePath": "tokenizer_config.json",
+          "size": 3478,
+          "sha256": "5d0803c94db9cd78763499e0956c95fd5a225c14a727e5a6cf5db3f96f010a6e",
+          "sourceSize": 3478,
+          "sourceSha256": "5d0803c94db9cd78763499e0956c95fd5a225c14a727e5a6cf5db3f96f010a6e"
+        }
+      ]
+    },
+    "kimi-k27-code": {
+      "repo": "moonshotai/Kimi-K2.7-Code",
+      "revision": "74797c9c62378b951a1f6fcf5c4631024e9b8bef",
+      "files": [
+        {
+          "path": "kimi-k27-code/tiktoken.model",
+          "sourcePath": "tiktoken.model",
+          "size": 2795286,
+          "sha256": "b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103",
+          "sourceSize": 2795286,
+          "sourceSha256": "b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103"
+        },
+        {
+          "path": "kimi-k27-code/tokenizer_config.json",
+          "sourcePath": "tokenizer_config.json",
+          "size": 4832,
+          "sha256": "6dfafeacca3d44748fc4a2fcc6725be5ea616ecc5b95f5a8b4277077c06e7d9f",
+          "sourceSize": 4832,
+          "sourceSha256": "6dfafeacca3d44748fc4a2fcc6725be5ea616ecc5b95f5a8b4277077c06e7d9f"
+        }
+      ]
+    },
     "kimi-k2-thinking": {
       "repo": "moonshotai/Kimi-K2-Thinking",
       "revision": "a51ccc050d73dab088bf7b0e2dd9b30ae85a4e55",
@@ -483,6 +571,72 @@
           "sha256": "da0e3a7cce6e4d787e85eb1c24d548420e0d7fe2c7a214e192795c46e40d75bb",
           "sourceSize": 50977,
           "sourceSha256": "da0e3a7cce6e4d787e85eb1c24d548420e0d7fe2c7a214e192795c46e40d75bb"
+        }
+      ]
+    },
+    "gemma4": {
+      "repo": "google/gemma-4-E2B-it",
+      "revision": "3e22461f65e89153144f8adb70e3b8c2cc9845a7",
+      "files": [
+        {
+          "path": "gemma4/tokenizer.json.gz",
+          "sourcePath": "tokenizer.json",
+          "size": 5398643,
+          "sha256": "139719222c553c9dd9c79f46bc4123f878d857786393e0361e57eb25809d3b29",
+          "sourceSize": 32169626,
+          "sourceSha256": "cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f"
+        },
+        {
+          "path": "gemma4/tokenizer_config.json",
+          "sourcePath": "tokenizer_config.json",
+          "size": 3082,
+          "sha256": "9f4fec4b1dc6ecddf8f4a92e9caea5971c0e67d81309f3f9066a2bee8c362633",
+          "sourceSize": 3082,
+          "sourceSha256": "9f4fec4b1dc6ecddf8f4a92e9caea5971c0e67d81309f3f9066a2bee8c362633"
+        }
+      ]
+    },
+    "llama4": {
+      "repo": "unsloth/Llama-4-Scout-17B-16E-Instruct",
+      "revision": "afd8e498c87bda51c7ea8ec68ea2f7c066e6340b",
+      "files": [
+        {
+          "path": "llama4/tokenizer.json.gz",
+          "sourcePath": "tokenizer.json",
+          "size": 4473854,
+          "sha256": "4e56f3ccebe095dc6b7b7bc70ff2615e242b5934c815f5b12a1457638e3833be",
+          "sourceSize": 27948578,
+          "sourceSha256": "172c9eb4beafc72601690da3ccfcede5c2e6806a8d5ec1fca33e22acea8023a4"
+        },
+        {
+          "path": "llama4/tokenizer_config.json",
+          "sourcePath": "tokenizer_config.json",
+          "size": 239629,
+          "sha256": "102f782a8bf57e53ad563d6327106df106016fc52c13c2fa62f34ad5acfb77ff",
+          "sourceSize": 239629,
+          "sourceSha256": "102f782a8bf57e53ad563d6327106df106016fc52c13c2fa62f34ad5acfb77ff"
+        }
+      ]
+    },
+    "mistral4": {
+      "repo": "mistralai/Mistral-Small-4-119B-2603",
+      "revision": "a11f36bebf709121056b1dbcc943d1c6afbe494d",
+      "files": [
+        {
+          "path": "mistral4/tokenizer.json.gz",
+          "sourcePath": "tokenizer.json",
+          "size": 2736106,
+          "sha256": "e27bba70a90b318bad300d3d498477ca1284ce0bd6b1670639abf7797bcc9a92",
+          "sourceSize": 17077420,
+          "sourceSha256": "2ba5b3330fd84d5376fcca797cfb3b42eee6241ce23e3271e6fb2a115a8751bd"
+        },
+        {
+          "path": "mistral4/tokenizer_config.json",
+          "sourcePath": "tokenizer_config.json",
+          "size": 21140,
+          "sha256": "3652d4cf7e8bd9f8d4cd9fd8df4ae7f47647a9846dadc6e45b1c09d8a88fc7ec",
+          "sourceSize": 21140,
+          "sourceSha256": "3652d4cf7e8bd9f8d4cd9fd8df4ae7f47647a9846dadc6e45b1c09d8a88fc7ec"
         }
       ]
     }

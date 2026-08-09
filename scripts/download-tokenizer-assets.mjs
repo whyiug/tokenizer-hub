@@ -7,6 +7,7 @@ import { createReadStream, createWriteStream } from "node:fs";
 import { tokenizerAssets } from "./tokenizer-assets.mjs";
 
 const force = process.argv.includes("--force");
+const bootstrapNewAssets = process.argv.includes("--bootstrap-new-assets");
 const manifest = JSON.parse(await fs.readFile("backend/tokenizers/manifest.json", "utf8"));
 const filesFor = (asset) => (asset.type === "hf_tiktoken" ? ["tiktoken.model", "tokenizer_config.json"] : ["tokenizer.json", "tokenizer_config.json"]);
 const endpoint = (process.env.HF_ENDPOINT || "https://hf-mirror.com").replace(/\/$/, "");
@@ -85,12 +86,22 @@ const download = async (asset, filename) => {
   const fileRecord = manifest.assets?.[asset.key]?.files?.find((file) => file.sourcePath === filename);
   await fs.mkdir(targetDir, { recursive: true });
 
-  if (!fileRecord) throw new Error(`Missing manifest record for ${asset.key}/${filename}`);
+  const expectedSourceSize = filename === "tokenizer.json"
+    ? asset.tokenizerJsonSize
+    : filename === "tiktoken.model"
+      ? asset.tiktokenModelSize
+      : asset.tokenizerConfigSize;
+  if (!fileRecord && !bootstrapNewAssets) {
+    throw new Error(
+      `Missing manifest record for ${asset.key}/${filename}; use --bootstrap-new-assets only for a pinned new asset.`,
+    );
+  }
 
   if (!force) {
     try {
       await fs.access(targetPath);
       const stats = await fs.stat(targetPath);
+      if (!fileRecord) throw new Error(`Unverified bootstrap target already exists: ${targetPath}`);
       const actualSha256 = await sha256File(targetPath);
       if (actualSha256 !== fileRecord.sha256) {
         throw new Error(`Local SHA-256 mismatch for ${targetPath}: ${actualSha256}`);
@@ -107,8 +118,15 @@ const download = async (asset, filename) => {
   await fs.rm(storedTmpPath, { force: true });
   const url = `${endpoint}/${asset.repo}/resolve/${asset.revision}/${filename}`;
   const { elapsedMs } = await curl(url, sourceTmpPath);
+  const sourceStats = await fs.stat(sourceTmpPath);
+  if (expectedSourceSize && sourceStats.size !== expectedSourceSize) {
+    await fs.rm(sourceTmpPath, { force: true });
+    throw new Error(
+      `Source size mismatch for ${asset.key}/${filename}: expected ${expectedSourceSize}, got ${sourceStats.size}`,
+    );
+  }
   const sourceSha256 = await sha256File(sourceTmpPath);
-  if (sourceSha256 !== fileRecord.sourceSha256) {
+  if (fileRecord && sourceSha256 !== fileRecord.sourceSha256) {
     await fs.rm(sourceTmpPath, { force: true });
     throw new Error(
       `Source SHA-256 mismatch for ${asset.key}/${filename}: expected ${fileRecord.sourceSha256}, got ${sourceSha256}`,
@@ -122,20 +140,21 @@ const download = async (asset, filename) => {
     await fs.rename(sourceTmpPath, storedTmpPath);
   }
   const storedSha256 = await sha256File(storedTmpPath);
-  if (filename !== "tokenizer.json" && storedSha256 !== fileRecord.sha256) {
+  if (fileRecord && filename !== "tokenizer.json" && storedSha256 !== fileRecord.sha256) {
     await fs.rm(storedTmpPath, { force: true });
     throw new Error(
       `Stored SHA-256 mismatch for ${asset.key}/${storedFilename}: expected ${fileRecord.sha256}, got ${storedSha256}`,
     );
   }
   await fs.rename(storedTmpPath, targetPath);
-  if (storedSha256 !== fileRecord.sha256) {
+  if (fileRecord && storedSha256 !== fileRecord.sha256) {
     console.warn(`${targetPath}: compressed bytes changed; run pnpm sync:tokenizer-manifest before starting the backend.`);
   }
   const stats = await fs.stat(targetPath);
   console.log(
     `wrote ${targetPath} (${stats.size.toLocaleString()} bytes in ${formatDuration(elapsedMs)}, ${formatRate(stats.size, elapsedMs)})`,
   );
+  if (!fileRecord) console.log(`  bootstrap source sha256 ${sourceSha256}`);
   return { status: "downloaded", asset: asset.key, filename, path: targetPath, size: stats.size, elapsedMs };
 };
 

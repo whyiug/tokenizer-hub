@@ -9,7 +9,9 @@ export type TokenizerFamily =
   | "minimax"
   | "mimo"
   | "glm"
-  | "llama";
+  | "llama"
+  | "gemma"
+  | "mistral";
 
 export type ModelLifecycle = "active" | "preview" | "legacy";
 
@@ -29,8 +31,10 @@ export type HfTokenizerKey =
   | "deepseek-v31"
   | "deepseek-v32"
   | "deepseek-v3-0324"
+  | "deepseek-v4-flash-0731"
   | "deepseek-r1"
   | "minimax-m27"
+  | "minimax-m3"
   | "minimax-m1"
   | "minimax-text-01"
   | "mimo-v25-pro"
@@ -40,10 +44,15 @@ export type HfTokenizerKey =
   | "glm4-32b"
   | "llama2"
   | "llama2-70b"
-  | "llama3";
+  | "llama3"
+  | "gemma4"
+  | "llama4"
+  | "mistral4";
 
 export type HfTiktokenTokenizerKey =
   | "kimi-k26"
+  | "kimi-k3"
+  | "kimi-k27-code"
   | "kimi-k2-thinking"
   | "kimi-k2-instruct";
 
@@ -82,6 +91,7 @@ export type ModelEntry = {
 };
 
 const RAW_ONLY: ModeSupport = { raw: true, chat: false, tools: false };
+const UNAVAILABLE: ModeSupport = { raw: false, chat: false, tools: false };
 const CHAT_AND_TOOLS: ModeSupport = { raw: true, chat: true, tools: true };
 
 const model = (
@@ -147,11 +157,15 @@ const TOKENIZERS = {
   deepseekV31: hf("deepseek-v31", "deepseek-ai/DeepSeek-V3.1-Base"),
   deepseekV32: hf("deepseek-v32", "deepseek-ai/DeepSeek-V3.2"),
   deepseekV30324: hf("deepseek-v3-0324", "deepseek-ai/DeepSeek-V3-0324"),
+  deepseekV4Flash0731: hf("deepseek-v4-flash-0731", "deepseek-ai/DeepSeek-V4-Flash-0731"),
   deepseekR1: hf("deepseek-r1", "deepseek-ai/DeepSeek-R1"),
   kimiK26: hfTiktoken("kimi-k26", "moonshotai/Kimi-K2.6"),
+  kimiK3: hfTiktoken("kimi-k3", "moonshotai/Kimi-K3"),
+  kimiK27Code: hfTiktoken("kimi-k27-code", "moonshotai/Kimi-K2.7-Code"),
   kimiK2Thinking: hfTiktoken("kimi-k2-thinking", "moonshotai/Kimi-K2-Thinking"),
   kimiK2Instruct: hfTiktoken("kimi-k2-instruct", "moonshotai/Kimi-K2-Instruct-0905"),
   minimaxM27: hf("minimax-m27", "MiniMaxAI/MiniMax-M2.7"),
+  minimaxM3: hf("minimax-m3", "MiniMaxAI/MiniMax-M3"),
   minimaxM1: hf("minimax-m1", "MiniMaxAI/MiniMax-M1-80k"),
   minimaxText01: hf("minimax-text-01", "MiniMaxAI/MiniMax-Text-01-hf"),
   mimoV25Pro: hf("mimo-v25-pro", "XiaomiMiMo/MiMo-V2.5-Pro"),
@@ -162,9 +176,15 @@ const TOKENIZERS = {
   llama2: hf("llama2", "NousResearch/Llama-2-7b-chat-hf"),
   llama2_70b: hf("llama2-70b", "TheBloke/Llama-2-70B-Chat-GPTQ"),
   llama3: hf("llama3", "NousResearch/Meta-Llama-3-8B-Instruct"),
+  gemma4: hf("gemma4", "google/gemma-4-E2B-it"),
+  llama4: hf("llama4", "meta-llama/Llama-4-Scout-17B-16E-Instruct"),
+  mistral4: hf("mistral4", "mistralai/Mistral-Small-4-119B-2603"),
 } as const;
 
 export const MODELS: ModelEntry[] = [
+  model("openai/gpt-5.6-sol", "GPT-5.6 Sol", "OpenAI", "o200k", TOKENIZERS.o200k, 1_050_000, false, "Global", "active", RAW_ONLY, ["reasoning", "code"]),
+  model("openai/gpt-5.6-terra", "GPT-5.6 Terra", "OpenAI", "o200k", TOKENIZERS.o200k, 1_050_000, false, "Global", "active", RAW_ONLY, ["reasoning"]),
+  model("openai/gpt-5.6-luna", "GPT-5.6 Luna", "OpenAI", "o200k", TOKENIZERS.o200k, 1_050_000, false, "Global", "active", RAW_ONLY),
   model("openai/gpt-5", "GPT-5", "OpenAI", "o200k", TOKENIZERS.o200k, 400_000, false, "Global", "active", RAW_ONLY, ["reasoning"]),
   model("openai/gpt-5-mini", "GPT-5 mini", "OpenAI", "o200k", TOKENIZERS.o200k, 400_000, false, "Global", "active", RAW_ONLY),
   model("openai/gpt-5-nano", "GPT-5 nano", "OpenAI", "o200k", TOKENIZERS.o200k, 400_000, false, "Global", "active", RAW_ONLY),
@@ -204,8 +224,9 @@ export const MODELS: ModelEntry[] = [
   model("qwen/qwen3-coder-30b-a3b-instruct", "Qwen3 Coder 30B A3B", "Qwen", "qwen", TOKENIZERS.qwen3Coder, 160_000, true, "China", "active", RAW_ONLY, ["code"]),
 
   model("deepseek/deepseek-v3.1", "DeepSeek V3.1", "DeepSeek", "deepseek", TOKENIZERS.deepseekV31, 163_840, true, "China", "active", RAW_ONLY),
-  model("deepseek/deepseek-v4-pro", "DeepSeek V4 Pro", "DeepSeek", "deepseek", TOKENIZERS.deepseekV32, 1_048_576, true, "China", "preview", RAW_ONLY, ["reasoning", "code"]),
-  model("deepseek/deepseek-v4-flash", "DeepSeek V4 Flash", "DeepSeek", "deepseek", TOKENIZERS.deepseekV32, 1_048_576, true, "China", "preview", RAW_ONLY, ["reasoning", "code"]),
+  model("deepseek/deepseek-v4-pro", "DeepSeek V4 Pro (unverified)", "DeepSeek", "deepseek", TOKENIZERS.deepseekV32, 1_048_576, true, "China", "preview", UNAVAILABLE, ["unverified"]),
+  model("deepseek/deepseek-v4-flash", "DeepSeek V4 Flash (unverified)", "DeepSeek", "deepseek", TOKENIZERS.deepseekV32, 1_048_576, true, "China", "preview", UNAVAILABLE, ["unverified"]),
+  model("deepseek/deepseek-v4-flash-0731", "DeepSeek V4 Flash 0731", "DeepSeek", "deepseek", TOKENIZERS.deepseekV4Flash0731, 1_048_576, true, "China", "active", RAW_ONLY, ["reasoning", "code"]),
   model("deepseek/deepseek-v3.2", "DeepSeek V3.2", "DeepSeek", "deepseek", TOKENIZERS.deepseekV32, 131_072, true, "China", "active", RAW_ONLY),
   model("deepseek/deepseek-v3.2-speciale", "DeepSeek V3.2 Speciale", "DeepSeek", "deepseek", TOKENIZERS.deepseekV32, 163_840, true, "China", "active", RAW_ONLY),
   model("deepseek/deepseek-v3.2-exp", "DeepSeek V3.2 Exp", "DeepSeek", "deepseek", TOKENIZERS.deepseekV31, 163_840, true, "China", "active", RAW_ONLY),
@@ -215,6 +236,8 @@ export const MODELS: ModelEntry[] = [
   model("deepseek/deepseek-r1-0528", "DeepSeek R1 0528", "DeepSeek", "deepseek", TOKENIZERS.deepseekR1, 163_840, true, "China", "active", RAW_ONLY, ["reasoning"]),
 
   model("moonshotai/kimi-k2.6", "Kimi K2.6", "Moonshot AI", "kimi", TOKENIZERS.kimiK26, 262_144, true, "China", "active", RAW_ONLY, ["reasoning"]),
+  model("moonshotai/kimi-k3", "Kimi K3", "Moonshot AI", "kimi", TOKENIZERS.kimiK3, 1_048_576, true, "China", "active", RAW_ONLY, ["reasoning"]),
+  model("moonshotai/kimi-k2.7-code", "Kimi K2.7 Code", "Moonshot AI", "kimi", TOKENIZERS.kimiK27Code, 262_144, true, "China", "active", RAW_ONLY, ["code"]),
   model("moonshotai/kimi-k2.5", "Kimi K2.5", "Moonshot AI", "kimi", TOKENIZERS.kimiK26, 262_144, true, "China", "active", RAW_ONLY),
   model("moonshotai/kimi-k2-thinking", "Kimi K2 Thinking", "Moonshot AI", "kimi", TOKENIZERS.kimiK2Thinking, 262_144, true, "China", "active", RAW_ONLY, ["reasoning"]),
   model("moonshotai/kimi-k2-0905", "Kimi K2 0905", "Moonshot AI", "kimi", TOKENIZERS.kimiK2Instruct, 262_144, true, "China", "active", RAW_ONLY),
@@ -223,6 +246,7 @@ export const MODELS: ModelEntry[] = [
   model("minimax/minimax-m1", "MiniMax M1", "MiniMax", "minimax", TOKENIZERS.minimaxM1, 1_000_000, true, "China", "active", RAW_ONLY, ["reasoning"]),
   model("minimax/minimax-01", "MiniMax-01", "MiniMax", "minimax", TOKENIZERS.minimaxText01, 1_000_192, true, "China", "active", RAW_ONLY),
   model("minimax/minimax-m2.7", "MiniMax M2.7", "MiniMax", "minimax", TOKENIZERS.minimaxM27, 196_608, true, "China", "active", RAW_ONLY),
+  model("minimax/minimax-m3", "MiniMax M3", "MiniMax", "minimax", TOKENIZERS.minimaxM3, 1_048_576, true, "China", "active", RAW_ONLY, ["reasoning"]),
   model("minimax/minimax-m2.5", "MiniMax M2.5", "MiniMax", "minimax", TOKENIZERS.minimaxM27, 196_608, true, "China", "active", RAW_ONLY),
   model("minimax/minimax-m2.1", "MiniMax M2.1", "MiniMax", "minimax", TOKENIZERS.minimaxM27, 196_608, true, "China", "active", RAW_ONLY),
   model("minimax/minimax-m2", "MiniMax M2", "MiniMax", "minimax", TOKENIZERS.minimaxM27, 196_608, true, "China", "active", RAW_ONLY),
@@ -232,6 +256,7 @@ export const MODELS: ModelEntry[] = [
   model("xiaomi/mimo-v2-flash", "MiMo V2 Flash", "Xiaomi", "mimo", TOKENIZERS.qwen3, 262_144, true, "China", "active", RAW_ONLY),
 
   model("z-ai/glm-5.1", "GLM 5.1", "Z.ai", "glm", TOKENIZERS.glm5, 202_752, true, "China", "active", RAW_ONLY),
+  model("z-ai/glm-5.2", "GLM 5.2", "Z.ai", "glm", TOKENIZERS.glm5, 1_048_576, true, "China", "active", RAW_ONLY, ["reasoning"]),
   model("z-ai/glm-5", "GLM 5", "Z.ai", "glm", TOKENIZERS.glm5, 202_752, true, "China", "active", RAW_ONLY),
   model("z-ai/glm-4.7-flash", "GLM 4.7 Flash", "Z.ai", "glm", TOKENIZERS.glm5, 202_752, true, "China", "active", RAW_ONLY),
   model("z-ai/glm-4.7", "GLM 4.7", "Z.ai", "glm", TOKENIZERS.glm45_47, 202_752, true, "China", "active", RAW_ONLY),
@@ -241,8 +266,19 @@ export const MODELS: ModelEntry[] = [
   model("z-ai/glm-4-32b", "GLM 4 32B", "Z.ai", "glm", TOKENIZERS.glm4_32b, 128_000, true, "China", "active", RAW_ONLY),
 
   model("meta/llama-3.1-8b-instruct", "Llama 3.1 8B Instruct", "Meta", "llama", TOKENIZERS.llama3, 131_072, true, "Global", "active", RAW_ONLY),
+  model("meta/llama-4-scout-17b-16e-instruct", "Llama 4 Scout 17B 16E", "Meta", "llama", TOKENIZERS.llama4, 10_485_760, true, "Global", "active", RAW_ONLY),
+  model("meta/llama-4-maverick-17b-128e-instruct", "Llama 4 Maverick 17B 128E", "Meta", "llama", TOKENIZERS.llama4, 1_048_576, true, "Global", "active", RAW_ONLY),
   model("meta/llama-2-70b-chat", "Llama 2 70B Chat", "Meta", "llama", TOKENIZERS.llama2_70b, 4_096, true, "Global", "legacy", RAW_ONLY, ["legacy"]),
   model("meta/llama-2-7b-chat", "Llama 2 7B Chat", "Meta", "llama", TOKENIZERS.llama2, 4_096, true, "Global", "legacy", RAW_ONLY, ["legacy"]),
+
+  model("google/gemma-4-e2b-it", "Gemma 4 E2B IT", "Google", "gemma", TOKENIZERS.gemma4, 131_072, true, "Global", "active", RAW_ONLY),
+  model("google/gemma-4-e4b-it", "Gemma 4 E4B IT", "Google", "gemma", TOKENIZERS.gemma4, 131_072, true, "Global", "active", RAW_ONLY),
+  model("google/gemma-4-12b-it", "Gemma 4 12B IT", "Google", "gemma", TOKENIZERS.gemma4, 262_144, true, "Global", "active", RAW_ONLY),
+  model("google/gemma-4-26b-a4b-it", "Gemma 4 26B A4B IT", "Google", "gemma", TOKENIZERS.gemma4, 262_144, true, "Global", "active", RAW_ONLY),
+  model("google/gemma-4-31b-it", "Gemma 4 31B IT", "Google", "gemma", TOKENIZERS.gemma4, 262_144, true, "Global", "active", RAW_ONLY),
+
+  model("mistralai/mistral-small-4-119b-2603", "Mistral Small 4 119B 2603", "Mistral AI", "mistral", TOKENIZERS.mistral4, 1_048_576, true, "Global", "active", RAW_ONLY),
+  model("mistralai/mistral-medium-3.5-128b", "Mistral Medium 3.5 128B", "Mistral AI", "mistral", TOKENIZERS.mistral4, 262_144, true, "Global", "active", RAW_ONLY),
 ];
 
-export const DEFAULT_MODEL = MODELS.find((model) => model.id === "openai/gpt-5") ?? MODELS[0];
+export const DEFAULT_MODEL = MODELS.find((model) => model.id === "openai/gpt-5.6-sol") ?? MODELS[0];

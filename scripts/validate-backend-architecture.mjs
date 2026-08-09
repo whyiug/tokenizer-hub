@@ -18,6 +18,7 @@ for (const file of requiredFiles) {
 }
 
 const pageSource = fs.readFileSync("src/app/page.tsx", "utf8");
+const tokenizerPresentationSource = fs.readFileSync("src/lib/tokenizer.ts", "utf8");
 const clientTokenizerSource = fs.existsSync("src/lib/exact-tokenizer.ts")
   ? fs.readFileSync("src/lib/exact-tokenizer.ts", "utf8")
   : "";
@@ -28,6 +29,8 @@ const forbiddenPageSnippets = [
   "@huggingface/tokenizers",
   "js-tiktoken/ranks",
   "/tokenizers/",
+  "renderChat",
+  "renderTools",
 ];
 
 for (const snippet of forbiddenPageSnippets) {
@@ -35,6 +38,18 @@ for (const snippet of forbiddenPageSnippets) {
     console.error(`Frontend still contains client tokenizer loading snippet: ${snippet}`);
     process.exitCode = 1;
   }
+}
+
+for (const snippet of ["export const renderChat", "export const renderTools", "<|im_start|>"]) {
+  if (tokenizerPresentationSource.includes(snippet)) {
+    console.error(`Frontend still owns an authoritative prompt serializer: ${snippet}`);
+    process.exitCode = 1;
+  }
+}
+
+if (!pageSource.includes("result.serializedText")) {
+  console.error("Frontend does not display the backend-authoritative serialized prompt.");
+  process.exitCode = 1;
 }
 
 if (!pageSource.includes("NEXT_PUBLIC_TOKENIZER_API_BASE") && !pageSource.includes("/v1/tokenize")) {

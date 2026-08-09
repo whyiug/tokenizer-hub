@@ -1,6 +1,6 @@
 {
   "name": "tokenizer-hub",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -18,8 +18,10 @@
     "validate:exact-ui": "node scripts/validate-exact-tokenizer-ui.mjs",
     "validate:initial-ui": "node scripts/validate-initial-token-state-ui.mjs",
     "validate:qwen-ui": "node scripts/validate-qwen-segment-ui.mjs",
-    "validate:all-models-ui": "node scripts/validate-all-models-ui.mjs",
+    "validate:all-models-ui": "node --no-warnings --experimental-strip-types scripts/validate-all-models-ui.mjs",
+    "validate:mode-ui": "node scripts/validate-mode-support-ui.mjs",
     "sync:backend-catalog": "node --no-warnings --experimental-strip-types scripts/sync-backend-catalog.mjs",
+    "sync:model-evidence": "node --no-warnings --experimental-strip-types scripts/sync-model-evidence.mjs",
     "sync:tokenizer-manifest": "node scripts/sync-tokenizer-manifest.mjs",
     "download:tokenizers": "node scripts/download-tokenizer-assets.mjs"
   },

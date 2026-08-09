@@ -30,6 +30,7 @@ import {
 import { INITIAL_TOKEN_MODEL_IDS, INITIAL_TOKEN_RESULTS, INITIAL_TOKEN_TEXT } from "@/data/initial-token-results";
 
 type Mode = "raw" | "chat" | "tools" | "compare";
+type ContentMode = Exclude<Mode, "compare">;
 
 const seedMessages: ChatMessage[] = [
   {
@@ -82,7 +83,8 @@ const modelKey = (model: ModelEntry) =>
 
 const modelsById = new Map(MODELS.map((model) => [model.id, model]));
 const tokenizerApiBase = process.env.NEXT_PUBLIC_TOKENIZER_API_BASE ?? DEFAULT_TOKENIZER_API_BASE;
-const defaultCompareIds = ["openai/gpt-5", "openai/gpt-4.1", "openai/gpt-4o", "qwen/qwen3-8b"];
+const defaultCompareIds = INITIAL_TOKEN_MODEL_IDS;
+const lifecycleRank = { active: 0, preview: 1, legacy: 2 } as const;
 
 type TokenFetchState = {
   requestKey: string;
@@ -119,7 +121,7 @@ const tokenResultFromBackend = (result: BackendTokenizeResult, text: string, mod
 });
 
 const initialTokenState: TokenFetchState = {
-  requestKey: JSON.stringify([INITIAL_TOKEN_TEXT, INITIAL_TOKEN_MODEL_IDS]),
+  requestKey: JSON.stringify([{ mode: "raw", text: INITIAL_TOKEN_TEXT }, INITIAL_TOKEN_MODEL_IDS]),
   results: Object.fromEntries(
     INITIAL_TOKEN_RESULTS.map((result) => {
       const model = modelsById.get(result.modelId);
@@ -137,6 +139,7 @@ const formatTokenRange = (tokenStart: number, tokenEnd: number) =>
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>("raw");
+  const [compareMode, setCompareMode] = useState<ContentMode>("raw");
   const [selectedModelId, setSelectedModelId] = useState(DEFAULT_MODEL.id);
   const [query, setQuery] = useState("");
   const [provider, setProvider] = useState("All");
@@ -153,6 +156,8 @@ export default function Home() {
   );
 
   const selectedModel = MODELS.find((model) => model.id === selectedModelId) ?? DEFAULT_MODEL;
+  const activeContentMode: ContentMode = mode === "compare" ? compareMode : mode;
+  const activeModeSupported = selectedModel.support[activeContentMode];
   const compareModels = useMemo(
     () => compareIds.map((id) => MODELS.find((model) => model.id === id)).filter((model): model is ModelEntry => Boolean(model)),
     [compareIds],
@@ -160,17 +165,19 @@ export default function Home() {
 
   const filteredModels = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return MODELS.filter((model) => {
-      const providerMatch = provider === "All" || model.provider === provider;
-      const queryMatch = !needle || modelKey(model).includes(needle);
-      return providerMatch && queryMatch;
-    });
+    return MODELS
+      .filter((model) => {
+        const providerMatch = provider === "All" || model.provider === provider;
+        const queryMatch = !needle || modelKey(model).includes(needle);
+        return providerMatch && queryMatch;
+      })
+      .sort((a, b) => lifecycleRank[a.lifecycle] - lifecycleRank[b.lifecycle] || a.name.localeCompare(b.name));
   }, [provider, query]);
 
   const tokenRequestContent = useMemo<TokenizeContent | null>(() => {
-    if (mode === "raw") return { mode: "raw", text: rawInput };
+    if (activeContentMode === "raw") return { mode: "raw", text: rawInput };
     const structuredMessages = messages.map(({ role, content }) => ({ role, content }));
-    if (mode === "chat" || mode === "compare") return { mode: "chat", messages: structuredMessages };
+    if (activeContentMode === "chat") return { mode: "chat", messages: structuredMessages };
     try {
       const tools: unknown = JSON.parse(toolsInput);
       if (!Array.isArray(tools) || tools.some((tool) => !tool || typeof tool !== "object" || Array.isArray(tool))) {
@@ -180,11 +187,15 @@ export default function Home() {
     } catch {
       return null;
     }
-  }, [messages, mode, rawInput, toolsInput]);
+  }, [activeContentMode, messages, rawInput, toolsInput]);
 
-  const tokenModelIds = useMemo(
+  const displayModelIds = useMemo(
     () => Array.from(new Set([selectedModel.id, ...compareModels.map((model) => model.id)])),
     [compareModels, selectedModel.id],
+  );
+  const tokenModelIds = useMemo(
+    () => displayModelIds.filter((modelId) => modelsById.get(modelId)?.support[activeContentMode]),
+    [activeContentMode, displayModelIds],
   );
   const tokenRequestKey = useMemo(
     () => JSON.stringify([tokenRequestContent, tokenModelIds]),
@@ -192,7 +203,7 @@ export default function Home() {
   );
 
   useEffect(() => {
-    if (!tokenRequestContent) return;
+    if (!tokenRequestContent || tokenModelIds.length === 0) return;
 
     const controller = new AbortController();
     const request: BatchTokenizeInput = { modelIds: tokenModelIds, ...tokenRequestContent };
@@ -248,20 +259,29 @@ export default function Home() {
 
   const tokenStateReady = tokenState.requestKey === tokenRequestKey;
   const tokenErrors = useMemo(
-    () =>
-      tokenRequestContent
-        ? tokenStateReady
-          ? tokenState.errors
-          : emptyTokenErrors
-        : Object.fromEntries(tokenModelIds.map((modelId) => [modelId, "Tools must be a JSON array"])),
-    [tokenModelIds, tokenRequestContent, tokenState.errors, tokenStateReady],
+    () => {
+      const errors: Record<string, string> = {};
+      displayModelIds.forEach((modelId) => {
+        const model = modelsById.get(modelId);
+        if (!model?.support[activeContentMode]) {
+          errors[modelId] = `${modeMeta[activeContentMode].label} mode unavailable`;
+        } else if (!tokenRequestContent) {
+          errors[modelId] = "Tools must be a JSON array";
+        } else if (tokenStateReady && tokenState.errors[modelId]) {
+          errors[modelId] = tokenState.errors[modelId];
+        }
+      });
+      return Object.keys(errors).length ? errors : emptyTokenErrors;
+    }, [activeContentMode, displayModelIds, tokenRequestContent, tokenState.errors, tokenStateReady],
   );
   const tokenResults = useMemo(
     () => (tokenRequestContent && tokenStateReady ? tokenState.results : emptyTokenResults),
     [tokenRequestContent, tokenState.results, tokenStateReady],
   );
   const tokenResult = tokenResults[selectedModel.id] ?? null;
-  const selectedTokenPending = !tokenStateReady || (!tokenResult && !tokenErrors[selectedModel.id]);
+  const selectedTokenPending = activeModeSupported
+    && Boolean(tokenRequestContent)
+    && (!tokenStateReady || (!tokenResult && !tokenErrors[selectedModel.id]));
   const visibleSegments = tokenResult?.segments.slice(0, 600) ?? [];
   const visibleTokenIds = useMemo(() => {
     if (!tokenResult) return [];
@@ -283,12 +303,19 @@ export default function Home() {
       compareModels
         .map((model) => {
           const result = tokenResults[model.id] ?? null;
-          const pending = !tokenStateReady || (!result && !tokenErrors[model.id]);
+          const pending = model.support[activeContentMode]
+            && Boolean(tokenRequestContent)
+            && (!tokenStateReady || (!result && !tokenErrors[model.id]));
           return { model, result, pending };
         })
         .sort((a, b) => (a.result?.count ?? Number.POSITIVE_INFINITY) - (b.result?.count ?? Number.POSITIVE_INFINITY)),
-    [compareModels, tokenErrors, tokenResults, tokenStateReady],
+    [activeContentMode, compareModels, tokenErrors, tokenRequestContent, tokenResults, tokenStateReady],
   );
+
+  const selectMode = (nextMode: Mode) => {
+    if (nextMode !== "compare") setCompareMode(nextMode);
+    setMode(nextMode);
+  };
 
   const updateMessage = (id: string, patch: Partial<ChatMessage>) => {
     setMessages((items) => items.map((item) => (item.id === id ? { ...item, ...patch } : item)));
@@ -362,12 +389,19 @@ export default function Home() {
           <div className="grid w-full grid-cols-4 items-center gap-1 rounded-[10px] border border-[#e1d9ce] bg-[#f6f2ec] p-1 sm:w-auto">
             {(Object.keys(modeMeta) as Mode[]).map((item) => {
               const Icon = modeMeta[item].icon;
+              const disabled = item !== "compare" && !selectedModel.support[item];
               return (
                 <button
                   key={item}
-                  onClick={() => setMode(item)}
+                  onClick={() => selectMode(item)}
+                  disabled={disabled}
+                  title={disabled ? `${modeMeta[item].label} mode is not verified for ${selectedModel.name}` : undefined}
                   className={`flex h-8 items-center justify-center gap-1.5 rounded-[8px] px-2 text-[13px] font-medium transition sm:px-3 ${
-                    mode === item ? "bg-white text-[#1d1b18] shadow-sm" : "text-[#777064] hover:text-[#1d1b18]"
+                    mode === item
+                      ? "bg-white text-[#1d1b18] shadow-sm"
+                      : disabled
+                        ? "cursor-not-allowed text-[#b5aea4]"
+                        : "text-[#777064] hover:text-[#1d1b18]"
                   }`}
                 >
                   <Icon className="size-3.5" aria-hidden />
@@ -410,13 +444,27 @@ export default function Home() {
                       selected ? "bg-[#f3eadb]" : "hover:bg-[#f6f2ec]"
                     }`}
                   >
-                    <span className="mt-0.5 size-2.5 rounded-full bg-[#5f8a6b]" />
+                    <span
+                      className={`mt-0.5 size-2.5 rounded-full ${
+                        model.support[activeContentMode]
+                          ? "bg-[#5f8a6b]"
+                          : model.lifecycle === "preview"
+                            ? "bg-[#c79747]"
+                            : "bg-[#b8b0a5]"
+                      }`}
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] font-medium">{model.name}</span>
                       <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[#8b8378]">
                         <span>{model.provider}</span>
                         <span>·</span>
                         <span className="tabular-nums">{compactContext(model.context)}</span>
+                        {model.lifecycle !== "active" && (
+                          <>
+                            <span>·</span>
+                            <span className="capitalize">{model.lifecycle}</span>
+                          </>
+                        )}
                       </span>
                     </span>
                     <span
@@ -442,13 +490,18 @@ export default function Home() {
                 <div className="text-[13px] font-semibold">Input</div>
                 <div className="mt-0.5 text-[12px] text-[#8b8378]">{selectedModel.name}</div>
               </div>
-              <span className="rounded-full bg-[#e8f0ec] px-2.5 py-1 text-[11px] font-medium text-[#44644c]">
-                Exact
+              <span
+                data-testid="mode-support"
+                className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                  activeModeSupported ? "bg-[#e8f0ec] text-[#44644c]" : "bg-[#f1ece5] text-[#7d7469]"
+                }`}
+              >
+                {activeModeSupported ? `Exact ${modeMeta[activeContentMode].label}` : `Unavailable ${modeMeta[activeContentMode].label}`}
               </span>
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto p-4">
-              {mode === "raw" ? (
+              {activeContentMode === "raw" ? (
                 <textarea
                   data-testid="raw-input"
                   value={rawInput}
@@ -493,7 +546,7 @@ export default function Home() {
                   >
                     Add message
                   </button>
-                  {mode === "tools" && (
+                  {activeContentMode === "tools" && (
                     <textarea
                       value={toolsInput}
                       onChange={(event) => setToolsInput(event.target.value)}
@@ -621,7 +674,7 @@ export default function Home() {
                         <tr key={model.id} className="border-t border-[#eee7dd]">
                           <td className="max-w-[190px] truncate px-3 py-2">{model.name}</td>
                           <td className="px-3 py-2 tabular-nums">
-                            {result ? formatNumber(result.count) : pending ? "..." : "—"}
+                            {result ? formatNumber(result.count) : pending ? "..." : "Unavailable"}
                           </td>
                           <td className="px-3 py-2 tabular-nums">
                             {result ? `${result.contextUsed.toFixed(2)}%` : pending ? "..." : "—"}
