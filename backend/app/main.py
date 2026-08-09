@@ -112,6 +112,9 @@ def healthz() -> dict[str, Any]:
         "models": registry.model_count,
         "checksumErrors": registry.integrity_errors,
         "tokenizerErrors": registry.tokenizer_errors,
+        "rendererReady": renderers.ready,
+        "renderersLoaded": renderers.renderer_count,
+        "rendererErrors": renderers.errors,
         "errors": registry.errors,
     }
 

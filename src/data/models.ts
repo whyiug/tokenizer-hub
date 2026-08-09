@@ -82,6 +82,7 @@ export type ModelEntry = {
 };
 
 const RAW_ONLY: ModeSupport = { raw: true, chat: false, tools: false };
+const CHAT_AND_TOOLS: ModeSupport = { raw: true, chat: true, tools: true };
 
 const model = (
   id: string,
@@ -191,7 +192,7 @@ export const MODELS: ModelEntry[] = [
   model("qwen/qwen3-235b-a22b", "Qwen3 235B A22B", "Qwen", "qwen", TOKENIZERS.qwen3, 262_144, true, "China", "active", RAW_ONLY),
   model("qwen/qwen3-32b", "Qwen3 32B", "Qwen", "qwen", TOKENIZERS.qwen3, 131_072, true, "China", "active", RAW_ONLY),
   model("qwen/qwen3-14b", "Qwen3 14B", "Qwen", "qwen", TOKENIZERS.qwen3, 131_072, true, "China", "active", RAW_ONLY),
-  model("qwen/qwen3-8b", "Qwen3 8B", "Qwen", "qwen", TOKENIZERS.qwen3, 131_072, true, "China", "active", RAW_ONLY),
+  model("qwen/qwen3-8b", "Qwen3 8B", "Qwen", "qwen", TOKENIZERS.qwen3, 131_072, true, "China", "active", CHAT_AND_TOOLS, [], "qwen3"),
   model("qwen/qwen3.6-35b-a3b", "Qwen3.6 35B A3B", "Qwen", "qwen", TOKENIZERS.qwen35_36, 262_144, true, "China", "active", RAW_ONLY),
   model("qwen/qwen3.6-27b", "Qwen3.6 27B", "Qwen", "qwen", TOKENIZERS.qwen35_36, 262_144, true, "China", "active", RAW_ONLY),
   model("qwen/qwen3.5-35b-a3b", "Qwen3.5 35B A3B", "Qwen", "qwen", TOKENIZERS.qwen35_36, 262_144, true, "China", "active", RAW_ONLY),

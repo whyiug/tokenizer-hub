@@ -448,10 +448,10 @@
       "lifecycle": "active",
       "support": {
         "raw": true,
-        "chat": false,
-        "tools": false
+        "chat": true,
+        "tools": true
       },
-      "rendererKey": null
+      "rendererKey": "qwen3"
     },
     {
       "id": "qwen/qwen3.6-35b-a3b",

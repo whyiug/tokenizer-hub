@@ -1,3 +1,5 @@
+import fs from "node:fs";
+
 const baseUrl = (process.argv[2] ?? "http://127.0.0.1:8000").replace(/\/$/, "");
 const sample = "五道口纳什";
 const expectedIds = [76208, 45893, 40526];
@@ -47,4 +49,17 @@ if (!Array.isArray(batch.results) || batch.results.length !== 2) {
   throw new Error(`Expected 2 batch results, got ${JSON.stringify(batch)}`);
 }
 
-console.log(`Backend tokenizer API ok for ${sample}`);
+const promptFixtures = JSON.parse(fs.readFileSync("backend/fixtures/prompt-rendering.json", "utf8"));
+for (const fixture of promptFixtures) {
+  const rendered = await postJson("/v1/tokenize", {
+    modelId: fixture.modelId,
+    mode: fixture.mode,
+    messages: fixture.messages,
+    ...(fixture.tools ? { tools: fixture.tools } : {}),
+  });
+  if (rendered.serializedText !== fixture.serializedText || JSON.stringify(rendered.tokens) !== JSON.stringify(fixture.tokens)) {
+    throw new Error(`Prompt fixture failed for ${fixture.name}: ${JSON.stringify(rendered)}`);
+  }
+}
+
+console.log(`Backend tokenizer API ok for ${sample} and ${promptFixtures.length} prompt fixtures`);

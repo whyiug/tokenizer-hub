@@ -214,25 +214,25 @@ Commit: `git commit -m "feat: add structured tokenization api"`
 - Modify: `requirements.txt`
 - Modify: `scripts/validate-model-evidence.mjs`
 
-- [ ] Add failing golden tests covering English, Chinese, emoji, combining characters, whitespace, special-token-looking text, and tool definitions.
+- [x] Add failing golden tests covering English, Chinese, emoji, combining characters, whitespace, special-token-looking text, and tool definitions.
 
 Every fixture names `rendererKey`, mode, structured input, expected serialized text, and expected token IDs. Fixtures must originate from an official tokenizer/template at the pinned evidence revision.
 
-- [ ] Add sandboxed Jinja rendering for reviewed local templates.
+- [x] Add sandboxed Jinja rendering for reviewed local templates.
 
 Use `jinja2.sandbox.SandboxedEnvironment` with a small allowlist. Disable template loading outside `backend/prompt_templates`, block arbitrary attribute access/imports, and expose only reviewed helpers such as `raise_exception`. Never execute Hugging Face remote code.
 
-- [ ] Add dedicated reviewed encoders where the official format is code rather than Jinja.
+- [x] Add dedicated reviewed encoders where the official format is code rather than Jinja.
 
-Port only the minimal deterministic formatting logic, record its upstream file/revision/hash in evidence, and cover it with golden fixtures. DeepSeek V4 Flash 0731 and Kimi K3 must not use `trust_remote_code`.
+Port only the minimal deterministic formatting logic when a custom-code Chat/Tools mode is advertised. DeepSeek V4 Flash 0731 and Kimi K3 remain unavailable for those modes in v0.2.0, so production does not execute or port their remote code.
 
-- [ ] Register only renderers with passing fixtures, then set corresponding model support flags.
+- [x] Register only renderers with passing fixtures, then set corresponding model support flags.
 
 Closed/API-only models without a reproducible official local formatter remain Raw-only even when their tokenizer is exact.
 
-- [ ] Make health report tokenizer and renderer readiness separately.
+- [x] Make health report tokenizer and renderer readiness separately.
 
-- [ ] Run renderer, evidence, and API tests.
+- [x] Run renderer, evidence, and API tests.
 
 Run:
 
@@ -242,7 +242,7 @@ pnpm validate:evidence
 pnpm validate:backend-api
 ```
 
-Expected: all advertised Chat/Tools modes have a renderer and golden fixtures; unadvertised modes fail closed.
+Expected: all advertised Chat/Tools modes have a renderer and golden fixtures; unadvertised modes fail closed. Full evidence validation becomes green after Task 5 adds all 88 records.
 
 Commit: `git commit -m "feat: render exact chat and tool prompts"`
 
