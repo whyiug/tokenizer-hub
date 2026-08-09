@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import gzip
+import hashlib
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -363,6 +364,9 @@ class TokenizerRegistry:
         self.tokenizer_root = tokenizer_root or repo_root / "backend" / "tokenizers"
         self.ready = False
         self.errors: dict[str, str] = {}
+        self.integrity_ready = False
+        self.integrity_errors: dict[str, str] = {}
+        self.tokenizer_errors: dict[str, str] = {}
         self._specs: dict[str, TokenizerSpec] = {}
         self._model_to_tokenizer: dict[str, str] = {}
         self._tokenizers: dict[str, BackendTokenizer] = {}
@@ -378,15 +382,26 @@ class TokenizerRegistry:
     def preload(self) -> None:
         self.ready = False
         self.errors = {}
+        self.integrity_ready = False
+        self.integrity_errors = {}
+        self.tokenizer_errors = {}
         self._specs, self._model_to_tokenizer = self._load_catalog()
         self._discover_local_hf_tokenizers()
         self._tokenizers = {}
+
+        self._verify_tokenizer_manifest()
+        if self.integrity_errors:
+            self.errors = {
+                f"integrity:{key}": message
+                for key, message in self.integrity_errors.items()
+            }
+            return
 
         for key, spec in self._specs.items():
             try:
                 self._tokenizers[key] = self._load_tokenizer(spec)
             except Exception as exc:
-                self.errors[key] = str(exc)
+                self.tokenizer_errors[key] = str(exc)
 
         missing_model_keys = sorted(
             {
@@ -396,8 +411,9 @@ class TokenizerRegistry:
             },
         )
         for tokenizer_key in missing_model_keys:
-            self.errors.setdefault(tokenizer_key, "Tokenizer did not load")
+            self.tokenizer_errors.setdefault(tokenizer_key, "Tokenizer did not load")
 
+        self.errors = dict(self.tokenizer_errors)
         self.ready = not self.errors
 
     def tokenize(self, model_id: str, text: str) -> dict[str, Any]:
@@ -474,6 +490,62 @@ class TokenizerRegistry:
                         asset=asset_dir.name,
                     ),
                 )
+
+    def _verify_tokenizer_manifest(self) -> None:
+        local_specs = [spec for spec in self._specs.values() if spec.type in {"hf", "hf_tiktoken"}]
+        if not local_specs:
+            self.integrity_ready = True
+            return
+
+        manifest_path = self.tokenizer_root / "manifest.json"
+        try:
+            with manifest_path.open("r", encoding="utf-8") as file:
+                manifest = json.load(file)
+        except Exception as exc:
+            self.integrity_errors["manifest"] = f"Tokenizer manifest unavailable: {exc}"
+            return
+
+        assets = manifest.get("assets", {})
+        root = self.tokenizer_root.resolve()
+        for spec in local_specs:
+            asset = spec.asset or spec.key.split(":", 1)[-1]
+            record = assets.get(asset)
+            if not isinstance(record, dict):
+                self.integrity_errors[asset] = f"Missing manifest entry for tokenizer asset: {asset}"
+                continue
+
+            files = record.get("files")
+            if not isinstance(files, list) or not files:
+                self.integrity_errors[asset] = f"Manifest entry has no files for tokenizer asset: {asset}"
+                continue
+
+            for file_record in files:
+                relative_path = str(file_record.get("path", ""))
+                expected_sha256 = str(file_record.get("sha256", ""))
+                try:
+                    asset_path = (self.tokenizer_root / relative_path).resolve()
+                    asset_path.relative_to(root)
+                except (OSError, ValueError):
+                    self.integrity_errors[relative_path or asset] = "Manifest path escapes tokenizer root"
+                    continue
+
+                if not asset_path.is_file():
+                    self.integrity_errors[relative_path] = f"Manifest file is missing: {relative_path}"
+                    continue
+
+                digest = hashlib.sha256()
+                with asset_path.open("rb") as file:
+                    for chunk in iter(lambda: file.read(1024 * 1024), b""):
+                        digest.update(chunk)
+                actual_sha256 = digest.hexdigest()
+                if actual_sha256 != expected_sha256:
+                    expected_size = file_record.get("size")
+                    self.integrity_errors[relative_path] = (
+                        f"SHA-256 mismatch for {relative_path}: expected {expected_sha256}, "
+                        f"got {actual_sha256} (expected size {expected_size}, actual {asset_path.stat().st_size})"
+                    )
+
+        self.integrity_ready = not self.integrity_errors
 
     def _load_tokenizer(self, spec: TokenizerSpec) -> BackendTokenizer:
         if spec.type == "tiktoken":

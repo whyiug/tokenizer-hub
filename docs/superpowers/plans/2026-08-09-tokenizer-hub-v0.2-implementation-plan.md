@@ -105,7 +105,7 @@ Commit: `git commit -m "test: define v0.2 catalog evidence contract"`
 - Modify: `backend/requirements.txt`
 - Modify: `requirements.txt`
 
-- [ ] Write failing Python tests for missing files, wrong hashes, and valid shared assets.
+- [x] Write failing Python tests for missing files, wrong hashes, and valid shared assets.
 
 ```python
 def test_preload_rejects_wrong_sha256(tmp_path): ...
@@ -117,19 +117,19 @@ Run: `backend/.venv/bin/python -m unittest backend.tests.test_tokenizer_manifest
 
 Expected: failures because the registry does not verify a manifest.
 
-- [ ] Generate a manifest entry for every currently checked-in tokenizer file.
+- [x] Generate a manifest entry for every currently checked-in tokenizer file.
 
 Each file record contains its relative path, byte size for diagnostics, SHA-256 for identity, official repository, and pinned commit revision. Do not accept size equality as proof of reuse.
 
-- [ ] Update downloads to write to a temporary file, verify SHA-256, then atomically replace the destination.
+- [x] Update downloads to write to a temporary file, verify SHA-256, then atomically replace the destination.
 
-- [ ] Update reuse validation to compare remote content hashes or pinned manifest hashes. Keep sizes only in error messages.
+- [x] Update reuse validation to compare remote content hashes or pinned manifest hashes. Keep sizes only in error messages.
 
-- [ ] Verify every manifest file during registry preload before constructing tokenizer objects.
+- [x] Verify every manifest file during registry preload before constructing tokenizer objects.
 
 Health must expose checksum errors separately from tokenizer-load errors and leave `ready: false` after any startup integrity failure.
 
-- [ ] Run tests and current-catalog validations.
+- [x] Run tests and current-catalog validations.
 
 Run:
 
@@ -139,7 +139,7 @@ pnpm validate:tokenizer-reuse
 pnpm validate:models
 ```
 
-Expected: all pass against the current assets.
+Expected: asset integrity, reuse, registry, and lint checks pass; `validate:models` retains the deliberate 71-versus-88 failure until Task 5.
 
 Commit: `git commit -m "feat: verify tokenizer assets by sha256"`
 

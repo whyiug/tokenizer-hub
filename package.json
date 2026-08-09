@@ -20,6 +20,7 @@
     "validate:qwen-ui": "node scripts/validate-qwen-segment-ui.mjs",
     "validate:all-models-ui": "node scripts/validate-all-models-ui.mjs",
     "sync:backend-catalog": "node scripts/sync-backend-catalog.mjs",
+    "sync:tokenizer-manifest": "node scripts/sync-tokenizer-manifest.mjs",
     "download:tokenizers": "node scripts/download-tokenizer-assets.mjs"
   },
   "dependencies": {

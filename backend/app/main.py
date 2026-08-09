@@ -50,8 +50,11 @@ class BatchTokenizeRequest(BaseModel):
 def healthz() -> dict[str, Any]:
     return {
         "ready": registry.ready,
+        "integrityReady": registry.integrity_ready,
         "tokenizersLoaded": registry.tokenizer_count,
         "models": registry.model_count,
+        "checksumErrors": registry.integrity_errors,
+        "tokenizerErrors": registry.tokenizer_errors,
         "errors": registry.errors,
     }
 

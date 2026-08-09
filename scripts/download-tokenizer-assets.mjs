@@ -1,11 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { createGzip } from "node:zlib";
 import { createReadStream, createWriteStream } from "node:fs";
 import { tokenizerAssets } from "./tokenizer-assets.mjs";
 
 const force = process.argv.includes("--force");
+const manifest = JSON.parse(await fs.readFile("backend/tokenizers/manifest.json", "utf8"));
 const filesFor = (asset) => (asset.type === "hf_tiktoken" ? ["tiktoken.model", "tokenizer_config.json"] : ["tokenizer.json", "tokenizer_config.json"]);
 const endpoint = (process.env.HF_ENDPOINT || "https://hf-mirror.com").replace(/\/$/, "");
 const noProxyEnv = {
@@ -33,8 +35,13 @@ const gzipFile = (sourcePath, targetPath) =>
     source.on("error", reject);
     target.on("error", reject);
     target.on("close", resolve);
-    source.pipe(createGzip({ level: 9 })).pipe(target);
+    source.pipe(createGzip({ level: 9, mtime: 0 })).pipe(target);
   });
+
+const sha256File = async (filePath) => {
+  const contents = await fs.readFile(filePath);
+  return createHash("sha256").update(contents).digest("hex");
+};
 
 const curl = (url, targetPath) =>
   new Promise((resolve, reject) => {
@@ -73,27 +80,57 @@ const download = async (asset, filename) => {
   const targetDir = path.join("backend", "tokenizers", asset.key);
   const storedFilename = filename === "tokenizer.json" ? "tokenizer.json.gz" : filename;
   const targetPath = path.join(targetDir, storedFilename);
-  const tmpPath = path.join(targetDir, `${filename}.tmp`);
+  const sourceTmpPath = path.join(targetDir, `${filename}.source.tmp`);
+  const storedTmpPath = path.join(targetDir, `${storedFilename}.stored.tmp`);
+  const fileRecord = manifest.assets?.[asset.key]?.files?.find((file) => file.sourcePath === filename);
   await fs.mkdir(targetDir, { recursive: true });
+
+  if (!fileRecord) throw new Error(`Missing manifest record for ${asset.key}/${filename}`);
 
   if (!force) {
     try {
       await fs.access(targetPath);
       const stats = await fs.stat(targetPath);
+      const actualSha256 = await sha256File(targetPath);
+      if (actualSha256 !== fileRecord.sha256) {
+        throw new Error(`Local SHA-256 mismatch for ${targetPath}: ${actualSha256}`);
+      }
       console.log(`skip ${targetPath} (${stats.size.toLocaleString()} bytes)`);
       return { status: "skipped", asset: asset.key, filename, path: targetPath, size: stats.size };
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith("Local SHA-256 mismatch")) throw error;
       // Continue to download.
     }
   }
 
-  const url = `${endpoint}/${asset.repo}/resolve/main/${filename}`;
-  const { elapsedMs } = await curl(url, tmpPath);
+  await fs.rm(sourceTmpPath, { force: true });
+  await fs.rm(storedTmpPath, { force: true });
+  const url = `${endpoint}/${asset.repo}/resolve/${asset.revision}/${filename}`;
+  const { elapsedMs } = await curl(url, sourceTmpPath);
+  const sourceSha256 = await sha256File(sourceTmpPath);
+  if (sourceSha256 !== fileRecord.sourceSha256) {
+    await fs.rm(sourceTmpPath, { force: true });
+    throw new Error(
+      `Source SHA-256 mismatch for ${asset.key}/${filename}: expected ${fileRecord.sourceSha256}, got ${sourceSha256}`,
+    );
+  }
+
   if (filename === "tokenizer.json") {
-    await gzipFile(tmpPath, targetPath);
-    await fs.rm(tmpPath, { force: true });
+    await gzipFile(sourceTmpPath, storedTmpPath);
+    await fs.rm(sourceTmpPath, { force: true });
   } else {
-    await fs.rename(tmpPath, targetPath);
+    await fs.rename(sourceTmpPath, storedTmpPath);
+  }
+  const storedSha256 = await sha256File(storedTmpPath);
+  if (filename !== "tokenizer.json" && storedSha256 !== fileRecord.sha256) {
+    await fs.rm(storedTmpPath, { force: true });
+    throw new Error(
+      `Stored SHA-256 mismatch for ${asset.key}/${storedFilename}: expected ${fileRecord.sha256}, got ${storedSha256}`,
+    );
+  }
+  await fs.rename(storedTmpPath, targetPath);
+  if (storedSha256 !== fileRecord.sha256) {
+    console.warn(`${targetPath}: compressed bytes changed; run pnpm sync:tokenizer-manifest before starting the backend.`);
   }
   const stats = await fs.stat(targetPath);
   console.log(

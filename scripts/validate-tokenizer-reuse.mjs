@@ -1,10 +1,54 @@
+import { createHash } from "node:crypto";
+import fs from "node:fs";
+import { gunzipSync } from "node:zlib";
 import { spawn } from "node:child_process";
+
 import { tokenizerAssets } from "./tokenizer-assets.mjs";
 
-const endpoint = (process.env.HF_ENDPOINT || "https://hf-mirror.com").replace(/\/$/, "");
+const endpoint = (process.env.HF_ENDPOINT || "https://huggingface.co").replace(/\/$/, "");
+const manifest = JSON.parse(fs.readFileSync("backend/tokenizers/manifest.json", "utf8"));
+const digest = (contents) => createHash("sha256").update(contents).digest("hex");
+const sha256Pattern = /^[a-f0-9]{64}$/;
+const revisionPattern = /^[a-f0-9]{40}$/;
+
+for (const asset of tokenizerAssets) {
+  const record = manifest.assets?.[asset.key];
+  if (!record || record.repo !== asset.repo || record.revision !== asset.revision) {
+    console.error(`${asset.key}: manifest source does not match pinned tokenizer asset.`);
+    process.exitCode = 1;
+    continue;
+  }
+  if (!revisionPattern.test(asset.revision ?? "")) {
+    console.error(`${asset.key}: missing pinned 40-character revision.`);
+    process.exitCode = 1;
+  }
+  for (const reuse of asset.reuseRepos ?? []) {
+    if (!reuse.repo || !revisionPattern.test(reuse.revision ?? "")) {
+      console.error(`${asset.key}: reused repository lacks a pinned revision.`);
+      process.exitCode = 1;
+    }
+  }
+  for (const file of record.files ?? []) {
+    const local = fs.readFileSync(`backend/tokenizers/${file.path}`);
+    const source = file.path.endsWith(".gz") ? gunzipSync(local) : local;
+    if (digest(local) !== file.sha256) {
+      console.error(`${file.path}: local SHA-256 does not match manifest.`);
+      process.exitCode = 1;
+    }
+    if (!sha256Pattern.test(file.sourceSha256 ?? "") || digest(source) !== file.sourceSha256) {
+      console.error(`${file.path}: source SHA-256 does not match manifest.`);
+      process.exitCode = 1;
+    }
+  }
+}
+
+if (process.argv.includes("--local-only")) {
+  if (!process.exitCode) console.log(`Local tokenizer manifest ok: ${tokenizerAssets.length} assets.`);
+  process.exit();
+}
+
 const noProxyEnv = {
   ...process.env,
-  HF_ENDPOINT: endpoint,
   HTTP_PROXY: "",
   HTTPS_PROXY: "",
   ALL_PROXY: "",
@@ -15,159 +59,103 @@ const noProxyEnv = {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const curlOnce = (args, url) =>
+const curlBufferOnce = (url) =>
   new Promise((resolve, reject) => {
-    const child = spawn("curl", [...args, url], { env: noProxyEnv });
-    let stdout = "";
+    const child = spawn(
+      "curl",
+      ["--http1.1", "-L", "--fail", "--connect-timeout", "20", "--max-time", "180", "-sS", url],
+      { env: noProxyEnv },
+    );
+    const chunks = [];
     let stderr = "";
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
+    child.stdout.on("data", (chunk) => chunks.push(chunk));
     child.stderr.on("data", (chunk) => {
       stderr += chunk;
     });
     child.on("error", reject);
     child.on("close", (code) => {
-      if (code === 0) resolve(stdout);
+      if (code === 0) resolve(Buffer.concat(chunks));
       else reject(new Error(`curl exited with ${code}: ${url}\n${stderr}`));
     });
   });
 
-const retryCurl = async (args, url) => {
+const retryCurl = async (url) => {
   let lastError;
-  for (let attempt = 1; attempt <= 6; attempt += 1) {
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
     try {
-      return await curlOnce(args, url);
+      return await curlBufferOnce(url);
     } catch (error) {
       lastError = error;
-      if (attempt < 6) await sleep(2_000 * attempt);
+      if (attempt < 4) await sleep(1_000 * attempt);
     }
   }
   throw lastError;
 };
 
-const headersOnce = (url) =>
-  curlOnce(
-    [
-      "--http1.1",
-      "-I",
-      "-L",
-      "--fail",
-      "--retry",
-      "6",
-      "--retry-delay",
-      "2",
-      "--connect-timeout",
-      "20",
-      "--max-time",
-      "90",
-      "-sS",
-    ],
-    url,
-  );
-
-const headersFor = async (url) => {
-  let lastError;
-  for (let attempt = 1; attempt <= 6; attempt += 1) {
-    try {
-      return await headersOnce(url);
-    } catch (error) {
-      lastError = error;
-      if (attempt < 6) await sleep(2_000 * attempt);
-    }
+const metadataCache = new Map();
+const metadataFor = async (repo, revision) => {
+  const key = `${repo}@${revision}`;
+  if (!metadataCache.has(key)) {
+    const url = `${endpoint}/api/models/${repo}/revision/${revision}?blobs=true`;
+    metadataCache.set(key, retryCurl(url).then((contents) => JSON.parse(contents.toString("utf8"))));
   }
-  throw lastError;
+  return metadataCache.get(key);
 };
 
-const metadataFor = (repo) =>
-  retryCurl(
-    [
-      "--http1.1",
-      "--fail",
-      "--retry",
-      "6",
-      "--retry-delay",
-      "2",
-      "--connect-timeout",
-      "20",
-      "--max-time",
-      "90",
-      "-sS",
-    ],
-    `${endpoint}/api/models/${repo}?blobs=true`,
-  );
-
-const remoteFileSize = async (repo, filename) => {
-  const metadata = JSON.parse(await metadataFor(repo));
+const remoteFileSha256 = async (repo, revision, filename) => {
+  const metadata = await metadataFor(repo, revision);
+  if (metadata.sha !== revision) {
+    throw new Error(`${repo}: API resolved ${metadata.sha}, expected ${revision}`);
+  }
   const remoteFile = metadata.siblings?.find((item) => item.rfilename === filename);
-  const metadataSizes = [remoteFile?.size, remoteFile?.lfs?.size].filter((size) => Number.isFinite(size) && size > 0);
-  const metadataSize = metadataSizes.at(-1);
-  if (metadataSize) return metadataSize;
-
-  const headers = await headersFor(`${endpoint}/${repo}/resolve/main/${filename}`);
-  const linkedSizes = [...headers.matchAll(/^x-linked-size:\s*(\d+)/gim)].map((match) => Number(match[1]));
-  const contentLengths = [...headers.matchAll(/^content-length:\s*(\d+)/gim)].map((match) => Number(match[1]));
-  const headerSizes = [...linkedSizes, ...contentLengths].filter((size) => Number.isFinite(size) && size > 0);
-  const headerSize = headerSizes.at(-1);
-  if (!headerSize) throw new Error(`Could not determine ${filename} size for ${repo}`);
-  return headerSize;
+  if (!remoteFile) throw new Error(`${repo}@${revision}: missing ${filename}`);
+  const oid = remoteFile.lfs?.oid?.replace(/^sha256:/, "");
+  if (sha256Pattern.test(oid ?? "")) return oid;
+  const contents = await retryCurl(`${endpoint}/${repo}/resolve/${revision}/${filename}`);
+  return digest(contents);
 };
 
-const requiredFilesFor = (asset) => {
-  if (asset.type === "hf_tiktoken") {
-    return [
-      { filename: "tiktoken.model", expected: asset.tiktokenModelSize },
-      { filename: "tokenizer_config.json", expected: asset.tokenizerConfigSize },
-    ];
-  }
-  return [{ filename: "tokenizer.json", expected: asset.tokenizerJsonSize }];
+const signatures = new Map();
+const identityFilesFor = (asset) => {
+  const files = manifest.assets[asset.key].files;
+  return asset.type === "hf_tiktoken"
+    ? files.filter((file) => ["tiktoken.model", "tokenizer_config.json"].includes(file.sourcePath))
+    : files.filter((file) => file.sourcePath === "tokenizer.json");
 };
-
-const assetSignature = (asset) =>
-  requiredFilesFor(asset)
-    .map((file) => `${file.filename}:${file.expected}`)
-    .join("|");
-
-const sizesByAsset = new Map();
 
 for (const asset of tokenizerAssets) {
-  for (const file of requiredFilesFor(asset)) {
-    if (!Number.isFinite(file.expected) || file.expected <= 0) {
-      console.error(`Missing ${file.filename} size for ${asset.key}.`);
-      process.exitCode = 1;
-      continue;
-    }
-  }
-
-  const signature = assetSignature(asset);
-  const duplicate = sizesByAsset.get(signature);
+  const files = identityFilesFor(asset);
+  const signature = files.map((file) => `${file.sourcePath}:${file.sourceSha256}`).join("|");
+  const duplicate = signatures.get(signature);
   if (duplicate) {
-    console.error(`Duplicate tokenizer signature ${signature} for ${duplicate} and ${asset.key}; merge repos into one asset.`);
+    console.error(`Duplicate tokenizer SHA-256 signature for ${duplicate} and ${asset.key}; merge them into one asset.`);
     process.exitCode = 1;
   } else {
-    sizesByAsset.set(signature, asset.key);
+    signatures.set(signature, asset.key);
   }
 }
 
 for (const asset of tokenizerAssets) {
-  const repos = [asset.repo, ...(asset.reuseRepos ?? [])];
-  const files = requiredFilesFor(asset);
-  const sizes = await Promise.all(
-    repos.flatMap((repo) =>
+  const sources = [{ repo: asset.repo, revision: asset.revision }, ...(asset.reuseRepos ?? [])];
+  const files = identityFilesFor(asset);
+  const results = await Promise.all(
+    sources.flatMap((source) =>
       files.map(async (file) => ({
-        repo,
-        filename: file.filename,
-        expected: file.expected,
-        size: await remoteFileSize(repo, file.filename),
+        ...source,
+        filename: file.sourcePath,
+        expected: file.sourceSha256,
+        actual: await remoteFileSha256(source.repo, source.revision, file.sourcePath),
       })),
     ),
   );
-  const mismatched = sizes.filter((item) => item.size !== item.expected);
-  if (mismatched.length) {
-    console.error(`Tokenizer reuse mismatch for ${asset.key}.`);
-    for (const item of sizes) console.error(`- ${item.repo}/${item.filename}: ${item.size} (expected ${item.expected})`);
+  const mismatches = results.filter((result) => result.actual !== result.expected);
+  if (mismatches.length) {
+    console.error(`Tokenizer SHA-256 reuse mismatch for ${asset.key}.`);
+    for (const result of results) {
+      console.error(`- ${result.repo}@${result.revision}/${result.filename}: ${result.actual} (expected ${result.expected})`);
+    }
     process.exitCode = 1;
   } else {
-    console.log(`${asset.key}: ${repos.length} repo(s), ${assetSignature(asset)}`);
+    console.log(`${asset.key}: ${sources.length} pinned repo(s), ${files.length} verified file(s)`);
   }
 }
