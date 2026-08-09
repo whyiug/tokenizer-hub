@@ -80,6 +80,8 @@ const buildInitialResult = (
 
   return {
     modelId,
+    mode: "chat",
+    serializedText: INITIAL_TOKEN_TEXT,
     tokenizerKey,
     label,
     count: tokens.length,

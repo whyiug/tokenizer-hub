@@ -25,6 +25,7 @@ if (!healthJson.ready) {
 
 const result = await postJson("/v1/tokenize", {
   modelId: "openai/gpt-3.5-turbo",
+  mode: "raw",
   text: sample,
 });
 
@@ -32,12 +33,13 @@ const tokens = result.tokens ?? [];
 const hasExpectedIds = expectedIds.every((id) => tokens.includes(id));
 const hasFakeIds = tokens.some((id) => id >= 90000 && id <= 90099);
 
-if (!hasExpectedIds || hasFakeIds || result.count !== 7) {
+if (!hasExpectedIds || hasFakeIds || result.count !== 7 || result.mode !== "raw" || result.serializedText !== sample) {
   throw new Error(`Expected exact cl100k ids for ${sample}, got ${JSON.stringify(result)}`);
 }
 
 const batch = await postJson("/v1/tokenize/batch", {
   modelIds: ["openai/gpt-3.5-turbo", "qwen/qwen3-8b"],
+  mode: "raw",
   text: sample,
 });
 

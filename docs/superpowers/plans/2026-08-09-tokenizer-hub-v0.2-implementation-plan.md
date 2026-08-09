@@ -154,7 +154,7 @@ Commit: `git commit -m "feat: verify tokenizer assets by sha256"`
 - Modify: `src/lib/tokenizer-api.ts`
 - Modify: `scripts/validate-backend-api.mjs`
 
-- [ ] Write failing API tests for Raw, Chat, Tools, malformed requests, unknown models, and unsupported modes.
+- [x] Write failing API tests for Raw, Chat, Tools, malformed requests, unknown models, and unsupported modes.
 
 Use a request contract equivalent to:
 
@@ -169,17 +169,17 @@ Use a request contract equivalent to:
 
 Raw requests contain `text`; Chat/Tools requests contain ordered `messages`; Tools additionally contains tool definitions. Reject contradictory payloads instead of guessing.
 
-- [ ] Add typed backend errors and stable error codes.
+- [x] Add typed backend errors and stable error codes.
 
 Use the codes `unknown_model`, `unsupported_mode`, `renderer_failed`, `tokenizer_unavailable`, and `registry_not_ready`. Single requests use appropriate HTTP status codes; batch results use typed unavailable objects without aborting other models.
 
-- [ ] Add `PromptRendererRegistry` with an identity Raw renderer and no universal Chat renderer.
+- [x] Add `PromptRendererRegistry` with an identity Raw renderer and no universal Chat renderer.
 
 The initial registry must make Chat/Tools unavailable until an explicit renderer is registered.
 
-- [ ] Return the authoritative `serializedText`, `mode`, IDs, count, and segments from both endpoints.
+- [x] Return the authoritative `serializedText`, `mode`, IDs, count, and segments from both endpoints.
 
-- [ ] Update the TypeScript client to send a discriminated union rather than `(modelId, text)`.
+- [x] Update the TypeScript client to send a discriminated union rather than `(modelId, text)`.
 
 ```ts
 type TokenizeInput =
@@ -188,7 +188,7 @@ type TokenizeInput =
   | { modelId: string; mode: "tools"; messages: ChatMessage[]; tools: ToolDefinition[] };
 ```
 
-- [ ] Run API and type checks.
+- [x] Run API and type checks.
 
 Run:
 

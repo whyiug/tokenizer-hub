@@ -13,6 +13,8 @@ export type BackendTokenSegment = {
 
 export type BackendTokenizeResult = {
   modelId: string;
+  mode: "raw" | "chat" | "tools";
+  serializedText: string;
   tokenizerKey: string;
   label: string;
   count: number;
@@ -22,13 +24,29 @@ export type BackendTokenizeResult = {
 
 export type BackendUnavailableResult = {
   modelId: string;
-  error: string;
+  error: {
+    code: "unknown_model" | "unsupported_mode" | "renderer_failed" | "tokenizer_unavailable" | "registry_not_ready";
+    message: string;
+  };
   unavailable: true;
 };
 
 export type BackendBatchResult = {
   results: Array<BackendTokenizeResult | BackendUnavailableResult>;
 };
+
+export type StructuredMessage = {
+  role: "system" | "user" | "assistant" | "tool";
+  content: string;
+};
+
+export type TokenizeContent =
+  | { mode: "raw"; text: string }
+  | { mode: "chat"; messages: StructuredMessage[] }
+  | { mode: "tools"; messages: StructuredMessage[]; tools: Record<string, unknown>[] };
+
+export type TokenizeInput = TokenizeContent & { modelId: string };
+export type BatchTokenizeInput = TokenizeContent & { modelIds: string[] };
 
 export const DEFAULT_TOKENIZER_API_BASE =
   process.env.NODE_ENV === "production" ? "/api" : "http://127.0.0.1:8000";
@@ -49,11 +67,11 @@ const postJson = async <T>(path: string, body: unknown, signal?: AbortSignal, ap
   return response.json() as Promise<T>;
 };
 
-export const tokenizeModel = (modelId: string, text: string, signal?: AbortSignal) =>
-  postJson<BackendTokenizeResult>("/v1/tokenize", { modelId, text }, signal);
+export const tokenizeModel = (input: TokenizeInput, signal?: AbortSignal) =>
+  postJson<BackendTokenizeResult>("/v1/tokenize", input, signal);
 
-export const tokenizeModels = (modelIds: string[], text: string, signal?: AbortSignal, apiBase?: string) =>
-  postJson<BackendBatchResult>("/v1/tokenize/batch", { modelIds, text }, signal, apiBase);
+export const tokenizeModels = (input: BatchTokenizeInput, signal?: AbortSignal, apiBase?: string) =>
+  postJson<BackendBatchResult>("/v1/tokenize/batch", input, signal, apiBase);
 
 export const isUnavailableResult = (
   result: BackendTokenizeResult | BackendUnavailableResult,

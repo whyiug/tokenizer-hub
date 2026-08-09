@@ -16,8 +16,6 @@ import { DEFAULT_MODEL, MODELS, type ModelEntry } from "@/data/models";
 import {
   compactContext,
   formatNumber,
-  renderChat,
-  renderTools,
   type ChatMessage,
   type TokenResult,
 } from "@/lib/tokenizer";
@@ -25,7 +23,9 @@ import {
   DEFAULT_TOKENIZER_API_BASE,
   isUnavailableResult,
   tokenizeModels,
+  type BatchTokenizeInput,
   type BackendTokenizeResult,
+  type TokenizeContent,
 } from "@/lib/tokenizer-api";
 import { INITIAL_TOKEN_MODEL_IDS, INITIAL_TOKEN_RESULTS, INITIAL_TOKEN_TEXT } from "@/data/initial-token-results";
 
@@ -82,7 +82,7 @@ const modelKey = (model: ModelEntry) =>
 
 const modelsById = new Map(MODELS.map((model) => [model.id, model]));
 const tokenizerApiBase = process.env.NEXT_PUBLIC_TOKENIZER_API_BASE ?? DEFAULT_TOKENIZER_API_BASE;
-const defaultCompareIds = ["openai/gpt-5.5", "openai/gpt-4.1", "openai/gpt-4", "openai/gpt-3.5-turbo"];
+const defaultCompareIds = ["openai/gpt-5", "openai/gpt-4.1", "openai/gpt-4o", "qwen/qwen3-8b"];
 
 type TokenFetchState = {
   requestKey: string;
@@ -136,7 +136,7 @@ const formatTokenRange = (tokenStart: number, tokenEnd: number) =>
   tokenEnd - tokenStart > 1 ? `#${tokenStart}-${tokenEnd - 1}` : `#${tokenStart}`;
 
 export default function Home() {
-  const [mode, setMode] = useState<Mode>("chat");
+  const [mode, setMode] = useState<Mode>("raw");
   const [selectedModelId, setSelectedModelId] = useState(DEFAULT_MODEL.id);
   const [query, setQuery] = useState("");
   const [provider, setProvider] = useState("All");
@@ -167,29 +167,44 @@ export default function Home() {
     });
   }, [provider, query]);
 
-  const activeText = useMemo(() => {
-    if (mode === "raw") return rawInput;
-    if (mode === "tools") return renderTools(messages, toolsInput, selectedModel.family);
-    return renderChat(messages, selectedModel.family);
-  }, [messages, mode, rawInput, selectedModel.family, toolsInput]);
+  const tokenRequestContent = useMemo<TokenizeContent | null>(() => {
+    if (mode === "raw") return { mode: "raw", text: rawInput };
+    const structuredMessages = messages.map(({ role, content }) => ({ role, content }));
+    if (mode === "chat" || mode === "compare") return { mode: "chat", messages: structuredMessages };
+    try {
+      const tools: unknown = JSON.parse(toolsInput);
+      if (!Array.isArray(tools) || tools.some((tool) => !tool || typeof tool !== "object" || Array.isArray(tool))) {
+        return null;
+      }
+      return { mode: "tools", messages: structuredMessages, tools: tools as Record<string, unknown>[] };
+    } catch {
+      return null;
+    }
+  }, [messages, mode, rawInput, toolsInput]);
 
   const tokenModelIds = useMemo(
     () => Array.from(new Set([selectedModel.id, ...compareModels.map((model) => model.id)])),
     [compareModels, selectedModel.id],
   );
-  const tokenRequestKey = useMemo(() => JSON.stringify([activeText, tokenModelIds]), [activeText, tokenModelIds]);
+  const tokenRequestKey = useMemo(
+    () => JSON.stringify([tokenRequestContent, tokenModelIds]),
+    [tokenRequestContent, tokenModelIds],
+  );
 
   useEffect(() => {
-    const controller = new AbortController();
+    if (!tokenRequestContent) return;
 
-    tokenizeModels(tokenModelIds, activeText, controller.signal, tokenizerApiBase)
+    const controller = new AbortController();
+    const request: BatchTokenizeInput = { modelIds: tokenModelIds, ...tokenRequestContent };
+
+    tokenizeModels(request, controller.signal, tokenizerApiBase)
       .then((batch) => {
         const nextResults: Record<string, TokenResult> = {};
         const nextErrors: Record<string, string> = {};
 
         batch.results.forEach((result) => {
           if (isUnavailableResult(result)) {
-            nextErrors[result.modelId] = result.error;
+            nextErrors[result.modelId] = result.error.message;
             return;
           }
 
@@ -199,7 +214,7 @@ export default function Home() {
             return;
           }
 
-          nextResults[result.modelId] = tokenResultFromBackend(result, activeText, model);
+          nextResults[result.modelId] = tokenResultFromBackend(result, result.serializedText, model);
         });
 
         tokenModelIds.forEach((modelId) => {
@@ -229,16 +244,21 @@ export default function Home() {
     return () => {
       controller.abort();
     };
-  }, [activeText, tokenModelIds, tokenRequestKey]);
+  }, [tokenModelIds, tokenRequestContent, tokenRequestKey]);
 
   const tokenStateReady = tokenState.requestKey === tokenRequestKey;
   const tokenErrors = useMemo(
-    () => (tokenStateReady ? tokenState.errors : emptyTokenErrors),
-    [tokenState.errors, tokenStateReady],
+    () =>
+      tokenRequestContent
+        ? tokenStateReady
+          ? tokenState.errors
+          : emptyTokenErrors
+        : Object.fromEntries(tokenModelIds.map((modelId) => [modelId, "Tools must be a JSON array"])),
+    [tokenModelIds, tokenRequestContent, tokenState.errors, tokenStateReady],
   );
   const tokenResults = useMemo(
-    () => (tokenStateReady ? tokenState.results : emptyTokenResults),
-    [tokenState.results, tokenStateReady],
+    () => (tokenRequestContent && tokenStateReady ? tokenState.results : emptyTokenResults),
+    [tokenRequestContent, tokenState.results, tokenStateReady],
   );
   const tokenResult = tokenResults[selectedModel.id] ?? null;
   const selectedTokenPending = !tokenStateReady || (!tokenResult && !tokenErrors[selectedModel.id]);
@@ -481,7 +501,7 @@ export default function Home() {
                     />
                   )}
                   <textarea
-                    value={activeText}
+                    value={tokenResult?.text ?? ""}
                     readOnly
                     className="min-h-[210px] resize-y rounded-[14px] border border-[#e1d9ce] bg-[#f8f4ee] p-4 font-mono text-[12px] leading-5 text-[#5f574d] outline-none"
                   />

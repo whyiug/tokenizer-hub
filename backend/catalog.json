@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "source": "generated from src/data/models.ts by scripts/sync-backend-catalog.mjs",
   "tokenizers": {
     "tiktoken:o200k_base": {
@@ -21,11 +21,6 @@
       "type": "tiktoken",
       "encoding": "p50k_base",
       "label": "p50k_base"
-    },
-    "tiktoken:gpt2": {
-      "type": "tiktoken",
-      "encoding": "gpt2",
-      "label": "gpt2"
     },
     "hf:qwen3": {
       "type": "hf",
@@ -75,11 +70,23 @@
       "repo": "deepseek-ai/DeepSeek-R1",
       "label": "deepseek-r1"
     },
-    "hf:minimax-m27": {
-      "type": "hf",
-      "asset": "minimax-m27",
-      "repo": "MiniMaxAI/MiniMax-M2.7",
-      "label": "minimax-m27"
+    "hf_tiktoken:kimi-k26": {
+      "type": "hf_tiktoken",
+      "asset": "kimi-k26",
+      "repo": "moonshotai/Kimi-K2.6",
+      "label": "kimi-k26"
+    },
+    "hf_tiktoken:kimi-k2-thinking": {
+      "type": "hf_tiktoken",
+      "asset": "kimi-k2-thinking",
+      "repo": "moonshotai/Kimi-K2-Thinking",
+      "label": "kimi-k2-thinking"
+    },
+    "hf_tiktoken:kimi-k2-instruct": {
+      "type": "hf_tiktoken",
+      "asset": "kimi-k2-instruct",
+      "repo": "moonshotai/Kimi-K2-Instruct-0905",
+      "label": "kimi-k2-instruct"
     },
     "hf:minimax-m1": {
       "type": "hf",
@@ -92,6 +99,12 @@
       "asset": "minimax-text-01",
       "repo": "MiniMaxAI/MiniMax-Text-01-hf",
       "label": "minimax-text-01"
+    },
+    "hf:minimax-m27": {
+      "type": "hf",
+      "asset": "minimax-m27",
+      "repo": "MiniMaxAI/MiniMax-M2.7",
+      "label": "minimax-m27"
     },
     "hf:mimo-v25-pro": {
       "type": "hf",
@@ -123,11 +136,11 @@
       "repo": "zai-org/GLM-4-32B-0414",
       "label": "glm4-32b"
     },
-    "hf:llama2": {
+    "hf:llama3": {
       "type": "hf",
-      "asset": "llama2",
-      "repo": "NousResearch/Llama-2-7b-chat-hf",
-      "label": "llama2"
+      "asset": "llama3",
+      "repo": "NousResearch/Meta-Llama-3-8B-Instruct",
+      "label": "llama3"
     },
     "hf:llama2-70b": {
       "type": "hf",
@@ -135,315 +148,794 @@
       "repo": "TheBloke/Llama-2-70B-Chat-GPTQ",
       "label": "llama2-70b"
     },
-    "hf:llama3": {
+    "hf:llama2": {
       "type": "hf",
-      "asset": "llama3",
-      "repo": "NousResearch/Meta-Llama-3-8B-Instruct",
-      "label": "llama3"
-    },
-    "hf_tiktoken:kimi-k26": {
-      "type": "hf_tiktoken",
-      "asset": "kimi-k26",
-      "repo": "moonshotai/Kimi-K2.6",
-      "label": "kimi-k26"
-    },
-    "hf_tiktoken:kimi-k2-thinking": {
-      "type": "hf_tiktoken",
-      "asset": "kimi-k2-thinking",
-      "repo": "moonshotai/Kimi-K2-Thinking",
-      "label": "kimi-k2-thinking"
-    },
-    "hf_tiktoken:kimi-k2-instruct": {
-      "type": "hf_tiktoken",
-      "asset": "kimi-k2-instruct",
-      "repo": "moonshotai/Kimi-K2-Instruct-0905",
-      "label": "kimi-k2-instruct"
+      "asset": "llama2",
+      "repo": "NousResearch/Llama-2-7b-chat-hf",
+      "label": "llama2"
     }
   },
   "models": [
     {
       "id": "openai/gpt-5",
-      "tokenizerKey": "tiktoken:o200k_base"
+      "tokenizerKey": "tiktoken:o200k_base",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-5-mini",
-      "tokenizerKey": "tiktoken:o200k_base"
+      "tokenizerKey": "tiktoken:o200k_base",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-5-nano",
-      "tokenizerKey": "tiktoken:o200k_base"
+      "tokenizerKey": "tiktoken:o200k_base",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-4.1",
-      "tokenizerKey": "tiktoken:o200k_base"
+      "tokenizerKey": "tiktoken:o200k_base",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-4.1-mini",
-      "tokenizerKey": "tiktoken:o200k_base"
+      "tokenizerKey": "tiktoken:o200k_base",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-4o",
-      "tokenizerKey": "tiktoken:o200k_base"
+      "tokenizerKey": "tiktoken:o200k_base",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-4o-mini",
-      "tokenizerKey": "tiktoken:o200k_base"
+      "tokenizerKey": "tiktoken:o200k_base",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/o4-mini",
-      "tokenizerKey": "tiktoken:o200k_base"
+      "tokenizerKey": "tiktoken:o200k_base",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/o3",
-      "tokenizerKey": "tiktoken:o200k_base"
+      "tokenizerKey": "tiktoken:o200k_base",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/o3-mini",
-      "tokenizerKey": "tiktoken:o200k_base"
+      "tokenizerKey": "tiktoken:o200k_base",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-oss-120b",
-      "tokenizerKey": "tiktoken:o200k_harmony"
+      "tokenizerKey": "tiktoken:o200k_harmony",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-oss-20b",
-      "tokenizerKey": "tiktoken:o200k_harmony"
+      "tokenizerKey": "tiktoken:o200k_harmony",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-4",
-      "tokenizerKey": "tiktoken:cl100k_base"
+      "tokenizerKey": "tiktoken:cl100k_base",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-4-turbo",
-      "tokenizerKey": "tiktoken:cl100k_base"
+      "tokenizerKey": "tiktoken:cl100k_base",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-4-0613",
-      "tokenizerKey": "tiktoken:cl100k_base"
+      "tokenizerKey": "tiktoken:cl100k_base",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-4-0314",
-      "tokenizerKey": "tiktoken:cl100k_base"
+      "tokenizerKey": "tiktoken:cl100k_base",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-4-32k-0613",
-      "tokenizerKey": "tiktoken:cl100k_base"
+      "tokenizerKey": "tiktoken:cl100k_base",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-4-32k-0314",
-      "tokenizerKey": "tiktoken:cl100k_base"
+      "tokenizerKey": "tiktoken:cl100k_base",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-3.5-turbo",
-      "tokenizerKey": "tiktoken:cl100k_base"
+      "tokenizerKey": "tiktoken:cl100k_base",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/gpt-3.5-turbo-0301",
-      "tokenizerKey": "tiktoken:cl100k_base"
+      "tokenizerKey": "tiktoken:cl100k_base",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/text-davinci-003",
-      "tokenizerKey": "tiktoken:p50k_base"
+      "tokenizerKey": "tiktoken:p50k_base",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/text-davinci-002",
-      "tokenizerKey": "tiktoken:p50k_base"
+      "tokenizerKey": "tiktoken:p50k_base",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "openai/code-davinci-002",
-      "tokenizerKey": "tiktoken:p50k_base"
+      "tokenizerKey": "tiktoken:p50k_base",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen3-235b-a22b",
-      "tokenizerKey": "hf:qwen3"
+      "tokenizerKey": "hf:qwen3",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen3-32b",
-      "tokenizerKey": "hf:qwen3"
+      "tokenizerKey": "hf:qwen3",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen3-14b",
-      "tokenizerKey": "hf:qwen3"
+      "tokenizerKey": "hf:qwen3",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen3-8b",
-      "tokenizerKey": "hf:qwen3"
+      "tokenizerKey": "hf:qwen3",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen3.6-35b-a3b",
-      "tokenizerKey": "hf:qwen35-36"
+      "tokenizerKey": "hf:qwen35-36",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen3.6-27b",
-      "tokenizerKey": "hf:qwen35-36"
+      "tokenizerKey": "hf:qwen35-36",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen3.5-35b-a3b",
-      "tokenizerKey": "hf:qwen35-36"
+      "tokenizerKey": "hf:qwen35-36",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen3.5-27b",
-      "tokenizerKey": "hf:qwen35-36"
+      "tokenizerKey": "hf:qwen35-36",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen3.5-9b",
-      "tokenizerKey": "hf:qwen35-36"
+      "tokenizerKey": "hf:qwen35-36",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen2.5-72b-instruct",
-      "tokenizerKey": "hf:qwen25"
+      "tokenizerKey": "hf:qwen25",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen2.5-coder-32b-instruct",
-      "tokenizerKey": "hf:qwen25"
+      "tokenizerKey": "hf:qwen25",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen3-coder-480b-a35b-instruct",
-      "tokenizerKey": "hf:qwen3-coder"
+      "tokenizerKey": "hf:qwen3-coder",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "qwen/qwen3-coder-30b-a3b-instruct",
-      "tokenizerKey": "hf:qwen3-coder"
+      "tokenizerKey": "hf:qwen3-coder",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "deepseek/deepseek-v3.1",
-      "tokenizerKey": "hf:deepseek-v31"
+      "tokenizerKey": "hf:deepseek-v31",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "deepseek/deepseek-v4-pro",
-      "tokenizerKey": "hf:deepseek-v32"
+      "tokenizerKey": "hf:deepseek-v32",
+      "lifecycle": "preview",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "deepseek/deepseek-v4-flash",
-      "tokenizerKey": "hf:deepseek-v32"
+      "tokenizerKey": "hf:deepseek-v32",
+      "lifecycle": "preview",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "deepseek/deepseek-v3.2",
-      "tokenizerKey": "hf:deepseek-v32"
+      "tokenizerKey": "hf:deepseek-v32",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "deepseek/deepseek-v3.2-speciale",
-      "tokenizerKey": "hf:deepseek-v32"
+      "tokenizerKey": "hf:deepseek-v32",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "deepseek/deepseek-v3.2-exp",
-      "tokenizerKey": "hf:deepseek-v31"
+      "tokenizerKey": "hf:deepseek-v31",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "deepseek/deepseek-v3.1-terminus",
-      "tokenizerKey": "hf:deepseek-v31"
+      "tokenizerKey": "hf:deepseek-v31",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "deepseek/deepseek-v3-0324",
-      "tokenizerKey": "hf:deepseek-v3-0324"
+      "tokenizerKey": "hf:deepseek-v3-0324",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "deepseek/deepseek-r1",
-      "tokenizerKey": "hf:deepseek-r1"
+      "tokenizerKey": "hf:deepseek-r1",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "deepseek/deepseek-r1-0528",
-      "tokenizerKey": "hf:deepseek-r1"
+      "tokenizerKey": "hf:deepseek-r1",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "moonshotai/kimi-k2.6",
-      "tokenizerKey": "hf_tiktoken:kimi-k26"
+      "tokenizerKey": "hf_tiktoken:kimi-k26",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "moonshotai/kimi-k2.5",
-      "tokenizerKey": "hf_tiktoken:kimi-k26"
+      "tokenizerKey": "hf_tiktoken:kimi-k26",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "moonshotai/kimi-k2-thinking",
-      "tokenizerKey": "hf_tiktoken:kimi-k2-thinking"
+      "tokenizerKey": "hf_tiktoken:kimi-k2-thinking",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "moonshotai/kimi-k2-0905",
-      "tokenizerKey": "hf_tiktoken:kimi-k2-instruct"
+      "tokenizerKey": "hf_tiktoken:kimi-k2-instruct",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "moonshotai/kimi-k2",
-      "tokenizerKey": "hf_tiktoken:kimi-k2-instruct"
+      "tokenizerKey": "hf_tiktoken:kimi-k2-instruct",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "minimax/minimax-m1",
-      "tokenizerKey": "hf:minimax-m1"
+      "tokenizerKey": "hf:minimax-m1",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "minimax/minimax-01",
-      "tokenizerKey": "hf:minimax-text-01"
+      "tokenizerKey": "hf:minimax-text-01",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "minimax/minimax-m2.7",
-      "tokenizerKey": "hf:minimax-m27"
+      "tokenizerKey": "hf:minimax-m27",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "minimax/minimax-m2.5",
-      "tokenizerKey": "hf:minimax-m27"
+      "tokenizerKey": "hf:minimax-m27",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "minimax/minimax-m2.1",
-      "tokenizerKey": "hf:minimax-m27"
+      "tokenizerKey": "hf:minimax-m27",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "minimax/minimax-m2",
-      "tokenizerKey": "hf:minimax-m27"
+      "tokenizerKey": "hf:minimax-m27",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "xiaomi/mimo-v2.5-pro",
-      "tokenizerKey": "hf:mimo-v25-pro"
+      "tokenizerKey": "hf:mimo-v25-pro",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "xiaomi/mimo-v2.5",
-      "tokenizerKey": "hf:mimo-v25"
+      "tokenizerKey": "hf:mimo-v25",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "xiaomi/mimo-v2-flash",
-      "tokenizerKey": "hf:qwen3"
+      "tokenizerKey": "hf:qwen3",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "z-ai/glm-5.1",
-      "tokenizerKey": "hf:glm5"
+      "tokenizerKey": "hf:glm5",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "z-ai/glm-5",
-      "tokenizerKey": "hf:glm5"
+      "tokenizerKey": "hf:glm5",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "z-ai/glm-4.7-flash",
-      "tokenizerKey": "hf:glm5"
+      "tokenizerKey": "hf:glm5",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "z-ai/glm-4.7",
-      "tokenizerKey": "hf:glm45-47"
+      "tokenizerKey": "hf:glm45-47",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "z-ai/glm-4.6",
-      "tokenizerKey": "hf:glm45-47"
+      "tokenizerKey": "hf:glm45-47",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "z-ai/glm-4.5",
-      "tokenizerKey": "hf:glm45-47"
+      "tokenizerKey": "hf:glm45-47",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "z-ai/glm-4.5-air",
-      "tokenizerKey": "hf:glm45-47"
+      "tokenizerKey": "hf:glm45-47",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "z-ai/glm-4-32b",
-      "tokenizerKey": "hf:glm4-32b"
+      "tokenizerKey": "hf:glm4-32b",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "meta/llama-3.1-8b-instruct",
-      "tokenizerKey": "hf:llama3"
+      "tokenizerKey": "hf:llama3",
+      "lifecycle": "active",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "meta/llama-2-70b-chat",
-      "tokenizerKey": "hf:llama2-70b"
+      "tokenizerKey": "hf:llama2-70b",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     },
     {
       "id": "meta/llama-2-7b-chat",
-      "tokenizerKey": "hf:llama2"
+      "tokenizerKey": "hf:llama2",
+      "lifecycle": "legacy",
+      "support": {
+        "raw": true,
+        "chat": false,
+        "tools": false
+      },
+      "rendererKey": null
     }
   ]
 }

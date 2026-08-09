@@ -43,6 +43,14 @@ class TokenizerSpec:
     repo: str | None = None
 
 
+@dataclass(frozen=True)
+class ModelSpec:
+    id: str
+    tokenizer_key: str
+    support: dict[str, bool]
+    renderer_key: str | None = None
+
+
 class TiktokenBackendTokenizer:
     def __init__(self, spec: TokenizerSpec) -> None:
         if not spec.encoding:
@@ -368,6 +376,7 @@ class TokenizerRegistry:
         self.integrity_errors: dict[str, str] = {}
         self.tokenizer_errors: dict[str, str] = {}
         self._specs: dict[str, TokenizerSpec] = {}
+        self._models: dict[str, ModelSpec] = {}
         self._model_to_tokenizer: dict[str, str] = {}
         self._tokenizers: dict[str, BackendTokenizer] = {}
 
@@ -385,7 +394,11 @@ class TokenizerRegistry:
         self.integrity_ready = False
         self.integrity_errors = {}
         self.tokenizer_errors = {}
-        self._specs, self._model_to_tokenizer = self._load_catalog()
+        self._specs, self._models = self._load_catalog()
+        self._model_to_tokenizer = {
+            model_id: model.tokenizer_key
+            for model_id, model in self._models.items()
+        }
         self._discover_local_hf_tokenizers()
         self._tokenizers = {}
 
@@ -431,7 +444,13 @@ class TokenizerRegistry:
         result = tokenizer.tokenize(text)
         return {"modelId": model_id, **result}
 
-    def _load_catalog(self) -> tuple[dict[str, TokenizerSpec], dict[str, str]]:
+    def get_model_spec(self, model_id: str) -> ModelSpec:
+        model = self._models.get(model_id)
+        if model is None:
+            raise UnknownModelError(f"Unknown modelId: {model_id}")
+        return model
+
+    def _load_catalog(self) -> tuple[dict[str, TokenizerSpec], dict[str, ModelSpec]]:
         with self.catalog_path.open("r", encoding="utf-8") as file:
             catalog = json.load(file)
 
@@ -446,20 +465,29 @@ class TokenizerRegistry:
             )
             for key, value in catalog.get("tokenizers", {}).items()
         }
-        model_to_tokenizer = {
-            str(model["id"]): str(model["tokenizerKey"])
+        models = {
+            str(model["id"]): ModelSpec(
+                id=str(model["id"]),
+                tokenizer_key=str(model["tokenizerKey"]),
+                support={
+                    "raw": bool(model.get("support", {}).get("raw", True)),
+                    "chat": bool(model.get("support", {}).get("chat", False)),
+                    "tools": bool(model.get("support", {}).get("tools", False)),
+                },
+                renderer_key=model.get("rendererKey"),
+            )
             for model in catalog.get("models", [])
         }
 
         unknown_tokenizers = sorted(
-            tokenizer_key
-            for tokenizer_key in model_to_tokenizer.values()
-            if tokenizer_key not in specs
+            model.tokenizer_key
+            for model in models.values()
+            if model.tokenizer_key not in specs
         )
         if unknown_tokenizers:
             raise TokenizerError(f"Catalog references unknown tokenizers: {unknown_tokenizers}")
 
-        return specs, model_to_tokenizer
+        return specs, models
 
     def _discover_local_hf_tokenizers(self) -> None:
         if not self.tokenizer_root.exists():
