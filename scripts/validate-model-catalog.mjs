@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const source = fs.readFileSync("src/data/models.ts", "utf8");
-const tokenizerSource = fs.readFileSync("src/lib/tokenizer.ts", "utf8");
+import { DEFAULT_MODEL, MODELS, MODEL_SNAPSHOT_DATE } from "../src/data/models.ts";
 
+const tokenizerSource = fs.readFileSync("src/lib/tokenizer.ts", "utf8");
 const requiredIds = [
   "openai/gpt-5",
   "openai/gpt-oss-120b",
@@ -39,70 +39,79 @@ const requiredIds = [
   "z-ai/glm-4-32b",
 ];
 
-const modelCount = (source.match(/model\(/g) ?? []).length;
-const missing = requiredIds.filter((id) => !source.includes(`model("${id}"`));
-const hfAssets = [...source.matchAll(/hf\("([^"]+)"/g)].map((match) => match[1]);
-const hfTiktokenAssets = [...source.matchAll(/hfTiktoken\("([^"]+)"/g)].map((match) => match[1]);
-const forbidden = [
-  { file: "src/data/models.ts", label: "Estimated status", hit: source.includes("Estimated") },
-  { file: "src/data/models.ts", label: "unverified GPT-5.5 ids", hit: source.includes('model("openai/gpt-5.5') },
-  { file: "src/data/models.ts", label: "unverified GPT-5.4 ids", hit: source.includes('model("openai/gpt-5.4') },
-  {
-    file: "src/data/models.ts",
-    label: "gpt-oss without o200k_harmony",
-    hit: source.includes('model("openai/gpt-oss') && !source.includes('tiktoken("o200k_harmony")'),
-  },
-  { file: "src/lib/tokenizer.ts", label: "estimator function", hit: tokenizerSource.includes("estimateTokenize") },
-  { file: "src/lib/tokenizer.ts", label: "fake 90000 token ids", hit: tokenizerSource.includes("90_000") || tokenizerSource.includes("90000") },
-];
+const errors = [];
+const ids = MODELS.map((model) => model.id);
+const idSet = new Set(ids);
 
-if (modelCount > 300) {
-  console.error(`Expected <= 300 models, found ${modelCount}.`);
-  process.exitCode = 1;
+if (MODELS.length !== 88) {
+  errors.push(`Expected exactly 88 models for v0.2.0, found ${MODELS.length}.`);
 }
 
-if (modelCount < 70) {
-  console.error(`Expected at least 70 exact models after the China LLM refresh, found ${modelCount}.`);
-  process.exitCode = 1;
+if (MODEL_SNAPSHOT_DATE !== "2026-08-09") {
+  errors.push(`Expected snapshot date 2026-08-09, found ${MODEL_SNAPSHOT_DATE}.`);
 }
 
-if (missing.length) {
-  console.error(`Missing required model ids:\n${missing.map((id) => `- ${id}`).join("\n")}`);
-  process.exitCode = 1;
+if (idSet.size !== ids.length) {
+  errors.push("Duplicate model ids found.");
 }
 
-for (const item of forbidden) {
-  if (item.hit) {
-    console.error(`Forbidden ${item.label} found in ${item.file}.`);
-    process.exitCode = 1;
+for (const id of requiredIds) {
+  if (!idSet.has(id)) errors.push(`Missing required model id: ${id}`);
+}
+
+for (const model of MODELS) {
+  if (!["active", "preview", "legacy"].includes(model.lifecycle)) {
+    errors.push(`${model.id}: invalid or missing lifecycle.`);
   }
-}
-
-for (const asset of hfAssets) {
-  for (const filename of ["tokenizer.json.gz", "tokenizer_config.json"]) {
-    const assetPath = path.join("backend", "tokenizers", asset, filename);
-    if (!fs.existsSync(assetPath)) {
-      console.error(`Missing tokenizer asset: ${assetPath}`);
-      process.exitCode = 1;
+  if (
+    !model.support
+    || typeof model.support.raw !== "boolean"
+    || typeof model.support.chat !== "boolean"
+    || typeof model.support.tools !== "boolean"
+  ) {
+    errors.push(`${model.id}: invalid or missing mode support.`);
+  } else {
+    if (!model.support.raw) errors.push(`${model.id}: v0.2 catalog entries must have exact Raw support.`);
+    if ((model.support.chat || model.support.tools) && !model.rendererKey) {
+      errors.push(`${model.id}: exact Chat/Tools support requires rendererKey.`);
     }
   }
-  const rawTokenizerPath = path.join("backend", "tokenizers", asset, "tokenizer.json");
-  if (fs.existsSync(rawTokenizerPath)) {
-    console.error(`Uncompressed tokenizer asset should not be committed: ${rawTokenizerPath}`);
-    process.exitCode = 1;
-  }
-}
 
-for (const asset of hfTiktokenAssets) {
-  for (const filename of ["tiktoken.model", "tokenizer_config.json"]) {
-    const assetPath = path.join("backend", "tokenizers", asset, filename);
-    if (!fs.existsSync(assetPath)) {
-      console.error(`Missing tokenizer asset: ${assetPath}`);
-      process.exitCode = 1;
+  const tokenizer = model.tokenizer;
+  if (tokenizer.type === "hf") {
+    for (const filename of ["tokenizer.json.gz", "tokenizer_config.json"]) {
+      const assetPath = path.join("backend", "tokenizers", tokenizer.asset, filename);
+      if (!fs.existsSync(assetPath)) errors.push(`Missing tokenizer asset: ${assetPath}`);
+    }
+    const rawTokenizerPath = path.join("backend", "tokenizers", tokenizer.asset, "tokenizer.json");
+    if (fs.existsSync(rawTokenizerPath)) {
+      errors.push(`Uncompressed tokenizer asset should not be committed: ${rawTokenizerPath}`);
+    }
+  }
+  if (tokenizer.type === "hf_tiktoken") {
+    for (const filename of ["tiktoken.model", "tokenizer_config.json"]) {
+      const assetPath = path.join("backend", "tokenizers", tokenizer.asset, filename);
+      if (!fs.existsSync(assetPath)) errors.push(`Missing tokenizer asset: ${assetPath}`);
     }
   }
 }
 
-if (!process.exitCode) {
-  console.log(`Model catalog ok: ${modelCount} exact models, ${new Set([...hfAssets, ...hfTiktokenAssets]).size} shared HF tokenizers.`);
+if (!DEFAULT_MODEL || DEFAULT_MODEL.lifecycle !== "active") {
+  errors.push("DEFAULT_MODEL must resolve to an active catalog entry.");
+}
+
+if (MODELS.length > 300) errors.push(`Expected <= 300 models, found ${MODELS.length}.`);
+if (tokenizerSource.includes("estimateTokenize")) errors.push("Forbidden estimator function found in src/lib/tokenizer.ts.");
+if (tokenizerSource.includes("90_000") || tokenizerSource.includes("90000")) {
+  errors.push("Forbidden fake 90000 token ids found in src/lib/tokenizer.ts.");
+}
+
+if (errors.length) {
+  console.error(errors.join("\n"));
+  process.exitCode = 1;
+} else {
+  const sharedTokenizers = new Set(
+    MODELS.filter((model) => model.tokenizer.type !== "tiktoken").map((model) => model.tokenizer.key),
+  );
+  console.log(`Model catalog ok: ${MODELS.length} exact models, ${sharedTokenizers.size} shared HF tokenizers.`);
 }

@@ -31,7 +31,7 @@
 - Modify: `scripts/validate-model-catalog.mjs`
 - Modify: `package.json`
 
-- [ ] Add a failing catalog validation for the v0.2 schema and exact count.
+- [x] Add a failing catalog validation for the v0.2 schema and exact count.
 
 The validator must require these fields on each entry:
 
@@ -49,7 +49,7 @@ type ModelSpec = {
 
 It must also reject an exact Chat/Tools declaration without a `rendererKey`, invalid defaults, duplicate IDs, a model count other than 88, and a snapshot date other than `2026-08-09`.
 
-- [ ] Add a failing evidence validation.
+- [x] Add a failing evidence validation.
 
 `data/model-evidence.json` must use this stable shape:
 
@@ -74,17 +74,17 @@ It must also reject an exact Chat/Tools declaration without a `rendererKey`, inv
 
 For tiktoken families, record the official encoding source and installed package version instead of inventing a Hugging Face repository. The script must require one evidence entry per model and validate URLs, revisions, SHA-256 values, and support/renderer consistency.
 
-- [ ] Run the new validations and confirm they fail for the old 71-model schema.
+- [x] Run the new validations and confirm they fail for the old 71-model schema.
 
 Run: `pnpm validate:models && pnpm validate:evidence`
 
 Expected: non-zero exit with actionable schema/count/evidence messages.
 
-- [ ] Implement the new TypeScript types and extend the `model(...)` helper without changing catalog behavior yet.
+- [x] Implement the new TypeScript types and extend the `model(...)` helper without changing catalog behavior yet.
 
 Use explicit lifecycle and support arguments at call sites; do not infer exactness from provider or tokenizer family.
 
-- [ ] Add `validate:evidence` to `package.json`, rerun the tests, and commit the contract scaffold.
+- [x] Add `validate:evidence` to `package.json`, rerun the tests, and commit the contract scaffold.
 
 Run: `pnpm validate:models; pnpm validate:evidence`
 
