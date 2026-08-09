@@ -412,7 +412,7 @@ Commit: `git commit -m "docs: document tokenizer hub v0.2"`
 - Modify only files required by failures discovered below.
 - Update checkbox state in this plan as tasks complete.
 
-- [ ] Run the static and unit suite from a clean process environment.
+- [x] Run the static and unit suite from a clean process environment.
 
 ```bash
 pnpm lint
@@ -428,7 +428,7 @@ pnpm build
 
 Expected: every command exits zero; build emits no missing-route or client/server-boundary errors.
 
-- [ ] Start the production-equivalent backend and verify health.
+- [x] Start the production-equivalent backend and verify health.
 
 Run:
 
@@ -440,7 +440,7 @@ pnpm validate:backend-api http://127.0.0.1:8000
 
 Expected: `ready`, tokenizer readiness, and renderer readiness are true with zero checksum errors.
 
-- [ ] Start the frontend and run the complete Playwright validation set.
+- [x] Start the frontend and run the complete Playwright validation set.
 
 Run:
 
@@ -455,12 +455,12 @@ pnpm validate:mode-ui http://localhost:3001
 
 Expected: all scripts exit zero; browser console and network log contain no unhandled errors.
 
-- [ ] Audit every design-spec requirement against code, tests, evidence, or an explicit out-of-scope statement.
+- [x] Audit every design-spec requirement against code, tests, evidence, or an explicit out-of-scope statement.
 
 Run: `git diff --check && git status --short`
 
 Expected: no whitespace errors; only intended v0.2 files are modified; the user's unrelated `HANDOFF.md` remains untouched and unstaged.
 
-- [ ] Commit only any verification fixes, then prepare the implementation summary with model count, mode coverage counts, asset size impact, and exact commands executed.
+- [x] Commit only any verification fixes, then prepare the implementation summary with model count, mode coverage counts, asset size impact, and exact commands executed.
 
 Commit, if needed: `git commit -m "test: verify tokenizer hub v0.2 release"`
