@@ -1,75 +1,86 @@
-# tokenizer_hub backend design
+# Tokenizer Hub backend design
 
-## Scope
+## Scope and invariants
 
-tokenizer_hub uses a one-time model snapshot and exact tokenizer artifacts. It does not run scheduled sync jobs and does not download model weights.
+Tokenizer Hub v0.2.0 is a curated `2026-08-09` snapshot with 88 catalog entries. It never downloads model weights, estimates token IDs, executes Hugging Face remote code, or sends prompt content to model providers. Unsupported modes fail closed.
 
-The frontend stays minimal: no source labels, snapshot labels, export, or download controls. Operational details live in this document and the validation scripts.
+Accuracy is capability-specific:
 
-## Model catalog
+- Raw encodes submitted text with a verified local tokenizer.
+- Chat serializes ordered messages with a verified formatter, then tokenizes that exact text.
+- Tools adds verified tool-definition serialization.
 
-- Source strategy: one-time manual snapshot from OpenRouter monthly popularity, Hugging Face model activity, and official provider releases.
-- Snapshot file: `src/data/models.ts`.
-- Backend catalog: generated from the snapshot with `pnpm sync:backend-catalog`.
-- Snapshot date: `2026-05-10`.
-- Runtime cap: fewer than 300 supported models.
-- Current exact model count: 61.
+The catalog contains 86 exact Raw entries. Two unreleased DeepSeek preview identifiers have all support flags disabled. Qwen3 8B is the only v0.2.0 model advertising Chat and Tools because it is backed by a pinned official template and golden fixtures.
 
-## Artifact strategy
+## Catalog and evidence
 
-Only tokenizer artifacts are needed. Model weights are out of scope.
+- UI snapshot: `src/data/models.ts`.
+- Generated backend snapshot: `backend/catalog.json` via `pnpm sync:backend-catalog`.
+- Evidence: `data/model-evidence.json` via `pnpm sync:model-evidence`.
+- Snapshot date: `2026-08-09`.
+- Lifecycle values: `active`, `preview`, and `legacy`.
+- Independent support flags: `raw`, `chat`, and `tools`.
 
-- `tokenizer.json`
-- `tokenizer_config.json`
-- `special_tokens_map.json`
-- `vocab.json`
-- `merges.txt`
-- `tokenizer.model`
-- `chat_template.jinja`
+Evidence records official model/context URLs, tokenizer type, source repository, fixed 40-character revision, source-file SHA-256, verification date, and renderer evidence when applicable. Llama 4 uses a public byte-identical tokenizer mirror because the official repositories are gated; both official Git blob identities and public mirror revisions are recorded and remotely verified.
 
-Tokenizer assets are keyed by a shared `tokenizerKey`. A tokenizer can be reused only when the remote `tokenizer.json` size is exactly identical for every mapped repository. The local assets live under `backend/tokenizers/<tokenizerKey>/` so they are bundled with the backend and not served as public static files.
+## Artifact identity and startup
 
-Downloads use the Hugging Face mirror when needed:
+Tokenizer definitions live in `scripts/tokenizer-assets.mjs`. Local files live in `backend/tokenizers/<asset>/`, and `backend/tokenizers/manifest.json` records stored and uncompressed source hashes. `tokenizer.json` is gzip-compressed; Kimi uses `tiktoken.model` plus `tokenizer_config.json`.
+
+Reuse is allowed only when the runtime identity files have equal content hashes at pinned revisions:
+
+- Hugging Face tokenizer: `tokenizer.json` SHA-256.
+- Hugging Face tiktoken tokenizer: `tiktoken.model` and `tokenizer_config.json` SHA-256.
+
+File size is diagnostic only. The registry verifies every checked-in file before constructing any tokenizer. A missing manifest, missing file, or hash mismatch leaves startup unready. `/healthz` separates `checksumErrors`, `tokenizerErrors`, and `rendererErrors`.
+
+Downloads use a temporary source file, validate the pinned source, compress when applicable, and atomically replace the target. New pinned assets require the explicit bootstrap flag once; the generated manifest and remote validator then become authoritative:
 
 ```bash
-HF_ENDPOINT=https://hf-mirror.com pnpm download:tokenizers
+pnpm download:tokenizers -- --bootstrap-new-assets
+pnpm sync:tokenizer-manifest
+pnpm validate:tokenizer-reuse
 ```
 
-The download and validation scripts clear proxy environment variables for Hugging Face mirror requests.
+## Structured request flow
 
-## Runtime strategy
+The browser sends a discriminated request to FastAPI:
 
-The browser does not load tokenizer vocabulary files. It only sends text and model ids to the backend.
+```json
+{"modelId":"openai/gpt-5.6-sol","mode":"raw","text":"hello"}
+```
 
-- Frontend API base: `NEXT_PUBLIC_TOKENIZER_API_BASE`.
-- Local default API base: `http://127.0.0.1:8000`.
-- Production default API base: same-origin `/api`.
-- Backend service: FastAPI under `backend/app`.
-- Health endpoint: `GET /healthz`.
-- Tokenization endpoint: `POST /v1/tokenize`.
-- Batch endpoint: `POST /v1/tokenize/batch`.
+```json
+{"modelId":"qwen/qwen3-8b","mode":"chat","messages":[{"role":"user","content":"hello"}]}
+```
 
-The backend preloads every tokenizer in `backend/catalog.json` during service startup. If any tokenizer cannot be loaded exactly, the service reports it in `/healthz` and the UI shows no token output for that model instead of estimating.
+Tools mode adds a `tools` array. Contradictory payloads are rejected rather than inferred. `PromptRendererRegistry` checks the model's support flag and uses only reviewed local renderers. The response includes `serializedText`, `mode`, tokenizer identity, token IDs, count, and source-aligned segments. The frontend preview displays `serializedText`; it is not authoritative for serialization.
 
-OpenAI-compatible tokenizer families use Python `tiktoken`. Open models use their local Hugging Face `tokenizer.json` artifacts through the native Rust `tokenizers` runtime. Both paths return exact token ids and text segments.
+Stable error codes distinguish `unknown_model`, `unsupported_mode`, `renderer_failed`, `tokenizer_unavailable`, and `registry_not_ready`. Batch requests return typed unavailable rows without aborting successful models.
 
-## Validation
+## Runtime and deployment
 
-Core checks:
+- Local API base: `http://127.0.0.1:8000`.
+- Production API base: same-origin `/api`.
+- Health: `GET /healthz`.
+- Single request: `POST /v1/tokenize`.
+- Batch request: `POST /v1/tokenize/batch`.
+- Vercel entry point: `api/index.py`.
+
+The checked-in tokenizer directory is roughly 73 MiB in the working tree; v0.2.0 adds about 25 MiB of stored assets. If the Python Function bundle exceeds a hosting limit, the unchanged FastAPI app can move to a long-lived service and the frontend can set `NEXT_PUBLIC_TOKENIZER_API_BASE`.
+
+## Verification
 
 ```bash
 pnpm validate:models
-HF_ENDPOINT=https://hf-mirror.com pnpm validate:tokenizer-reuse
+pnpm validate:evidence
+pnpm validate:tokenizer-reuse
 pnpm validate:backend-architecture
-pnpm validate:backend-api
-pnpm validate:exact-ui http://localhost:3001
-pnpm validate:all-models-ui http://localhost:3001
+backend/.venv/bin/python -m unittest discover -s backend/tests -v
+pnpm validate:segments
+pnpm validate:backend-api http://127.0.0.1:8000
+pnpm validate:mode-ui http://localhost:3001
+pnpm build
 ```
 
-`validate:backend-api` includes the regression case `五道口纳什` to guard against placeholder ids such as `90000-9004`.
-
-## Deployment
-
-The Vercel deployment exposes the FastAPI backend as a Python Function through `api/index.py` and rewrites `/api/:path*` to that function. This keeps the browser on the same origin and avoids exposing tokenizer assets to the client.
-
-For a heavier production tier, the same FastAPI app can still move to a long-lived Python service. In that case set `NEXT_PUBLIC_TOKENIZER_API_BASE` to the external backend URL before promoting the frontend.
+The multilingual Raw fixtures include Chinese, emoji, a combining character, whitespace, and special-token-looking text. Prompt-rendering fixtures cover the official Qwen3 Chat and Tools serialization.
